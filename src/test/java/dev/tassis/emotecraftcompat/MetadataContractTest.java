@@ -14,6 +14,7 @@ class MetadataContractTest {
     void generatedMetadataDeclaresClientIntegrationsAndMixinConfig() throws IOException {
         String metadata = resource("META-INF/neoforge.mods.toml");
 
+        assertTrue(metadata.contains("license=\"MIT\""));
         assertTrue(metadata.contains("modId=\"emotecraft_compat\""));
         assertTrue(metadata.contains("modId=\"emotecraft\""));
         assertTrue(metadata.contains("modId=\"entity_model_features\""));

@@ -48,5 +48,9 @@ docker compose run --rm build gradle --no-daemon runClient
 - atleugim: upstream Fabric port
 - Tassis: NeoForge 1.21.1 implementation and expanded compatibility work
 
-The upstream project declares `All Rights Reserved`; this project retains that
-license declaration.
+This is an independent implementation inspired by the projects above; no
+upstream source code is included.
+
+## License
+
+Emotecraft Compat is available under the [MIT License](LICENSE).
