@@ -1,0 +1,24 @@
+{
+  "version": "1.0.0",
+  "updatedAt": "2026-10-16T00:00:00.000Z",
+  "dependencies": [
+    {
+      "name": "3D Skin Layers",
+      "resolvedVersion": "1.11.2",
+      "repoUrl": "https://github.com/tr7zw/3d-Skin-Layers.git",
+      "ref": "2b968abd033107e21fed282340d328a0287c4162",
+      "path": ".slim/clonedeps/repos/tr7zw__3d-Skin-Layers",
+      "packagePath": "src/main/java/dev/tr7zw/skinlayers",
+      "reason": "Player overlay mesh API and rendering implementation used for bend compatibility"
+    },
+    {
+      "name": "Player Animator",
+      "resolvedVersion": "2.0.4+1.21.1",
+      "repoUrl": "https://github.com/KosmX/minecraftPlayerAnimator.git",
+      "ref": "cb3227efc19ec46065597332ae265076d0f2b495",
+      "path": ".slim/clonedeps/repos/KosmX__minecraftPlayerAnimator",
+      "packagePath": "minecraft/common/src/main/java/dev/kosmx/playerAnim",
+      "reason": "Defines BendyLib bend lifecycle and the dormant 3D Skin Layers transformer integration"
+    }
+  ]
+}

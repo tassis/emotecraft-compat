@@ -1,0 +1,16 @@
+{
+  "required": false,
+  "minVersion": "0.8",
+  "package": "dev.tassis.emotecraftcompat.mixin",
+  "plugin": "dev.tassis.emotecraftcompat.mixin.OptionalCompatMixinPlugin",
+  "compatibilityLevel": "JAVA_21",
+  "client": [
+    "EMFAnimationEntityContextMixin",
+    "PlayerModelLayerBendMixin",
+    "PlayerAnimatorAnimationApplierMixin",
+    "PlayerAnimatorBendHelperMixin"
+  ],
+  "injectors": {
+    "defaultRequire": 0
+  }
+}

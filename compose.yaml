@@ -1,0 +1,12 @@
+services:
+  build:
+    build:
+      context: .
+    working_dir: /workspace
+    command: gradle --no-daemon build
+    volumes:
+      - .:/workspace
+      - gradle-cache:/home/gradle/.gradle
+
+volumes:
+  gradle-cache:

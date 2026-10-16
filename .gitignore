@@ -1,0 +1,15 @@
+.gradle/
+build/
+run/
+run-client/
+logs/
+crash-reports/
+.idea/
+.vscode/
+*.iml
+*.log
+.DS_Store
+
+# BEGIN oh-my-opencode-slim clonedeps
+.slim/clonedeps/repos/
+# END oh-my-opencode-slim clonedeps
