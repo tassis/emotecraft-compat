@@ -4,4 +4,4 @@ pluginManagement {
     }
 }
 
-rootProject.name = 'emotecraft-fix-animate-texture-neoforge'
+rootProject.name = 'emotecraft_compat'

@@ -1,4 +1,4 @@
-# Emotecraft Fix Animate Texture
+# Emotecraft Compat
 
 A client-side compatibility mod for NeoForge 1.21.1, inspired by
 [catman0221/emotecraft-fix-animate-texture](https://github.com/catman0221/emotecraft-fix-animate-texture).

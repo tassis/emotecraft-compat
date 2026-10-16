@@ -21,7 +21,7 @@ import java.util.function.Predicate;
 
 @Mod(value = EmotecraftCompatMod.MOD_ID, dist = Dist.CLIENT)
 public final class EmotecraftCompatMod {
-    public static final String MOD_ID = "emotecraft_fix_animate_texture";
+    public static final String MOD_ID = "emotecraft_compat";
     public static final Logger LOGGER = LogUtils.getLogger();
 
     public EmotecraftCompatMod(IEventBus modEventBus) {
