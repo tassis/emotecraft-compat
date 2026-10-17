@@ -42,6 +42,17 @@ To launch the NeoForge development client from the same container:
 docker compose run --rm build gradle --no-daemon runClient
 ```
 
+## Development Notes
+
+This project was developed with the assistance of AI tools, including code
+generation, Gradle project setup, and test case creation.
+
+The implementation was guided, reviewed, adjusted, and manually tested by the
+author to address real compatibility issues.
+
+AI-assisted code may still have limitations, so bug reports and feedback are
+welcome.
+
 ## Attribution
 
 - Catman0221: original Forge 1.20.1 mod
