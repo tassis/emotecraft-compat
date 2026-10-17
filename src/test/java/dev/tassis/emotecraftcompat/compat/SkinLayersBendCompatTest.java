@@ -2,23 +2,15 @@ package dev.tassis.emotecraftcompat.compat;
 
 import dev.tr7zw.skinlayers.api.MeshTransformer;
 import io.github.kosmx.bendylib.ICuboidBuilder;
-import io.github.kosmx.bendylib.MutableCuboid;
 import io.github.kosmx.bendylib.impl.BendableCuboid;
-import io.github.kosmx.bendylib.impl.ICuboid;
 import io.github.kosmx.bendylib.impl.RememberingPos;
 import net.minecraft.core.Direction;
-import net.minecraft.util.Tuple;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 import org.junit.jupiter.api.Test;
 
-import java.util.HashMap;
-import java.util.Map;
-
 import static org.junit.jupiter.api.Assertions.assertEquals;
-import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertNotEquals;
-import static org.junit.jupiter.api.Assertions.assertNull;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class SkinLayersBendCompatTest {
@@ -104,58 +96,94 @@ class SkinLayersBendCompatTest {
     }
 
     @Test
-    void appliesSourceBendDirectionToFastRenderCube() {
-        ICuboidBuilder.Data cubeData = new ICuboidBuilder.Data(
-                0, 0,
-                -2.0F, -2.0F, -2.0F,
-                4.0F, 12.0F, 4.0F,
-                0.0F, 0.0F, 0.0F,
-                false, 64.0F, 64.0F
-        );
-        BendableCuboid sourceBend = new BendableCuboid.Builder().setDirection(Direction.UP).build(cubeData);
-        sourceBend.applyBend(0.35F, 0.8F);
-        TestMutableCuboid cube = new TestMutableCuboid(cubeData);
-
-        assertTrue(SkinLayersBendCompat.applyFastRenderBend(cube, sourceBend));
-
-        Object activeMutator = cube.getActiveMutator().getB();
-        assertTrue(activeMutator instanceof BendableCuboid);
-        BendableCuboid cubeBend = (BendableCuboid) activeMutator;
-        assertEquals(sourceBend.getBendAxis(), cubeBend.getBendAxis());
-        assertEquals(sourceBend.getBend(), cubeBend.getBend());
-
-        RememberingPos expected = new RememberingPos(0.0F, 8.0F, 2.0F);
-        RememberingPos actual = new RememberingPos(0.0F, 8.0F, 2.0F);
-        sourceBend.applyBend(sourceBend.getBendAxis(), sourceBend.getBend(), consumer -> consumer.accept(expected));
-        cubeBend.applyBend(cubeBend.getBendAxis(), cubeBend.getBend(), consumer -> consumer.accept(actual));
-        assertEquals(expected.getPos().x(), actual.getPos().x(), 0.00001F);
-        assertEquals(expected.getPos().y(), actual.getPos().y(), 0.00001F);
-        assertEquals(expected.getPos().z(), actual.getPos().z(), 0.00001F);
+    void preservesTheOriginalNormalRelationshipForBothVertexOrders() {
+        assertPreservesWindingRelationship(new Vector4f[] {
+                vertex(-2.0F, 12.0F, 2.0F),
+                vertex(2.0F, 12.0F, 2.0F),
+                vertex(2.0F, 8.0F, 2.0F),
+                vertex(-2.0F, 8.0F, 2.0F)
+        });
+        assertPreservesWindingRelationship(new Vector4f[] {
+                vertex(-2.0F, 12.0F, 2.0F),
+                vertex(-2.0F, 8.0F, 2.0F),
+                vertex(2.0F, 8.0F, 2.0F),
+                vertex(2.0F, 12.0F, 2.0F)
+        });
     }
 
     @Test
-    void resetsOnlyTheEmotecraftFastRenderBend() {
-        ICuboidBuilder.Data cubeData = new ICuboidBuilder.Data(
-                0, 0,
-                -2.0F, 0.0F, -2.0F,
-                4.0F, 12.0F, 4.0F,
-                0.0F, 0.0F, 0.0F,
-                false, 64.0F, 64.0F
-        );
-        BendableCuboid sourceBend = new BendableCuboid.Builder().setDirection(Direction.UP).build(cubeData);
-        sourceBend.applyBend(0.0F, 0.8F);
-        TestMutableCuboid cube = new TestMutableCuboid(cubeData);
+    void allowsNormalToRotatePastTheOriginalNormalHemisphere() {
+        assertNormalRotatesPastOriginalHemisphere(new Vector4f[] {
+                vertex(-2.0F, 13.0F, 2.0F),
+                vertex(2.0F, 13.0F, 2.0F),
+                vertex(2.0F, 12.0F, 2.0F),
+                vertex(-2.0F, 12.0F, 2.0F)
+        });
+        assertNormalRotatesPastOriginalHemisphere(new Vector4f[] {
+                vertex(-2.0F, 13.0F, 2.0F),
+                vertex(-2.0F, 12.0F, 2.0F),
+                vertex(2.0F, 12.0F, 2.0F),
+                vertex(2.0F, 13.0F, 2.0F)
+        });
+    }
 
-        assertTrue(SkinLayersBendCompat.applyFastRenderBend(cube, sourceBend));
-        assertTrue(SkinLayersBendCompat.resetFastRenderBend(cube));
-        assertNull(cube.getActiveMutator());
+    @Test
+    void usesTheFallbackTriangleWhenTheFirstTriangleIsDegenerate() {
+        MeshTransformer transformer = createLegTransformer(0.0F);
+        Vector3f normal = new Vector3f(0.0F, 0.0F, 1.0F);
+        Vector4f[] vertices = {
+                vertex(0.0F, 0.0F, 0.0F),
+                vertex(1.0F, 0.0F, 0.0F),
+                vertex(2.0F, 0.0F, 0.0F),
+                vertex(0.0F, 1.0F, 0.0F)
+        };
 
-        cube.registerMutator("other_mod", data -> new BendableCuboid.Builder()
-                .setDirection(Direction.UP)
-                .build(data));
-        cube.getAndActivateMutator("other_mod");
-        assertFalse(SkinLayersBendCompat.resetFastRenderBend(cube));
-        assertEquals("other_mod", cube.getActiveMutator().getA());
+        transformer.transform(normal, vertices);
+
+        assertEquals(0.0F, normal.x(), 0.00001F);
+        assertEquals(0.0F, normal.y(), 0.00001F);
+        assertEquals(1.0F, normal.z(), 0.00001F);
+    }
+
+    @Test
+    void keepsNormalWhenTheFaceCannotProvideAReliableOrientation() {
+        MeshTransformer transformer = createLegTransformer(0.0F);
+        Vector4f[] face = {
+                vertex(-2.0F, 12.0F, 2.0F),
+                vertex(2.0F, 12.0F, 2.0F),
+                vertex(2.0F, 8.0F, 2.0F),
+                vertex(-2.0F, 8.0F, 2.0F)
+        };
+        Vector3f zeroNormal = new Vector3f();
+        Vector3f orthogonalNormal = new Vector3f(1.0F, 0.0F, 0.0F);
+        Vector3f nonFiniteNormal = new Vector3f(Float.NaN, 0.0F, 1.0F);
+
+        transformer.transform(zeroNormal, copyVertices(face));
+        transformer.transform(orthogonalNormal, copyVertices(face));
+        transformer.transform(nonFiniteNormal, copyVertices(face));
+
+        assertEquals(new Vector3f(), zeroNormal);
+        assertEquals(new Vector3f(1.0F, 0.0F, 0.0F), orthogonalNormal);
+        assertTrue(Float.isNaN(nonFiniteNormal.x()));
+        assertEquals(0.0F, nonFiniteNormal.y(), 0.0F);
+        assertEquals(1.0F, nonFiniteNormal.z(), 0.0F);
+    }
+
+    @Test
+    void keepsNormalWhenTheWholeFaceIsDegenerate() {
+        MeshTransformer transformer = createLegTransformer(0.0F);
+        Vector3f normal = new Vector3f(0.0F, 1.0F, 0.0F);
+        Vector4f repeated = vertex(0.0F, 0.0F, 0.0F);
+        Vector4f[] vertices = {
+                new Vector4f(repeated),
+                new Vector4f(repeated),
+                new Vector4f(repeated),
+                new Vector4f(repeated)
+        };
+
+        transformer.transform(normal, vertices);
+
+        assertEquals(new Vector3f(0.0F, 1.0F, 0.0F), normal);
     }
 
     private static BendableCuboid createArmBend() {
@@ -169,64 +197,90 @@ class SkinLayersBendCompatTest {
         return new BendableCuboid.Builder().setDirection(Direction.UP).build(armData);
     }
 
-    private static final class TestMutableCuboid implements MutableCuboid {
-        private final ICuboidBuilder.Data data;
-        private final Map<String, ICuboidBuilder<ICuboid>> builders = new HashMap<>();
-        private final Map<String, ICuboid> mutators = new HashMap<>();
-        private String activeId;
+    private static MeshTransformer createLegTransformer(float bendAngle) {
+        ICuboidBuilder.Data legData = new ICuboidBuilder.Data(
+                0, 0,
+                -2.0F, 0.0F, -2.0F,
+                4.0F, 12.0F, 4.0F,
+                0.0F, 0.0F, 0.0F,
+                false, 64.0F, 64.0F
+        );
+        BendableCuboid bend = new BendableCuboid.Builder().setDirection(Direction.UP).build(legData);
+        bend.applyBend(0.0F, bendAngle);
+        return SkinLayersBendCompat.createTransformer(
+                bend,
+                1.0F,
+                1.0F,
+                1.0F,
+                0.0F,
+                0.0F,
+                0.0F
+        );
+    }
 
-        private TestMutableCuboid(ICuboidBuilder.Data data) {
-            this.data = data;
-        }
+    private static void assertNormalRotatesPastOriginalHemisphere(Vector4f[] vertices) {
+        MeshTransformer transformer = createLegTransformer((float) Math.toRadians(120.0D));
+        Vector3f normal = new Vector3f(0.0F, 0.0F, 1.0F);
+        Vector3f originalNormal = new Vector3f(normal);
+        float originalRelationship = windingRelationship(normal, vertices);
 
-        @Override
-        public boolean registerMutator(String id, ICuboidBuilder<ICuboid> builder) {
-            return builders.putIfAbsent(id, builder) == null;
-        }
+        transformer.transform(normal, vertices);
 
-        @Override
-        public boolean unregisterMutator(String id) {
-            mutators.remove(id);
-            return builders.remove(id) != null;
-        }
+        Vector3f expectedNormal = geometricNormal(vertices).normalize().mul(originalRelationship);
+        assertTrue(
+                expectedNormal.dot(originalNormal) < 0.0F,
+                "test face must actually rotate its geometric normal beyond 90 degrees"
+        );
+        assertTrue(normal.dot(originalNormal) < 0.0F, "normal should be allowed to rotate beyond 90 degrees");
+        assertTrue(normal.dot(expectedNormal) > 0.99999F, "normal should match the oriented geometric normal");
+        assertEquals(
+                originalRelationship,
+                windingRelationship(normal, vertices),
+                0.0F,
+                "bend must preserve the original winding-to-normal relationship"
+        );
+    }
 
-        @Override
-        public Tuple<String, ICuboid> getActiveMutator() {
-            return activeId == null ? null : new Tuple<>(activeId, mutators.get(activeId));
-        }
+    private static void assertPreservesWindingRelationship(Vector4f[] vertices) {
+        MeshTransformer transformer = createLegTransformer(0.8F);
+        Vector3f normal = new Vector3f(0.0F, 0.0F, 1.0F);
+        float originalRelationship = windingRelationship(normal, vertices);
 
-        @Override
-        public boolean hasMutator(String id) {
-            return builders.containsKey(id);
-        }
+        transformer.transform(normal, vertices);
 
-        @Override
-        public ICuboidBuilder<ICuboid> getCuboidBuilder(String id) {
-            return builders.get(id);
-        }
+        assertEquals(
+                originalRelationship,
+                windingRelationship(normal, vertices),
+                0.0F,
+                "bend must preserve whether the supplied normal agrees with the vertex winding"
+        );
+    }
 
-        @Override
-        public ICuboid getMutator(String id) {
-            return mutators.get(id);
-        }
+    private static float windingRelationship(Vector3f normal, Vector4f[] vertices) {
+        return Math.signum(normal.dot(geometricNormal(vertices)));
+    }
 
-        @Override
-        public ICuboid getAndActivateMutator(String id) {
-            if (id == null) {
-                activeId = null;
-                return null;
-            }
-            ICuboidBuilder<ICuboid> builder = builders.get(id);
-            if (builder == null) {
-                return null;
-            }
-            activeId = id;
-            return mutators.computeIfAbsent(id, ignored -> builder.build(data));
+    private static Vector3f geometricNormal(Vector4f[] vertices) {
+        Vector3f normal = edge(vertices[1], vertices[0]).cross(edge(vertices[2], vertices[0]));
+        if (normal.lengthSquared() < 0.000001F) {
+            normal = edge(vertices[2], vertices[0]).cross(edge(vertices[3], vertices[0]));
         }
+        return normal;
+    }
 
-        @Override
-        public void copyStateFrom(MutableCuboid source) {
-            throw new UnsupportedOperationException();
+    private static Vector3f edge(Vector4f left, Vector4f right) {
+        return new Vector3f(left.x() - right.x(), left.y() - right.y(), left.z() - right.z());
+    }
+
+    private static Vector4f vertex(float x, float y, float z) {
+        return new Vector4f(x / 16.0F, y / 16.0F, z / 16.0F, 1.0F);
+    }
+
+    private static Vector4f[] copyVertices(Vector4f[] vertices) {
+        Vector4f[] copy = new Vector4f[vertices.length];
+        for (int index = 0; index < vertices.length; index++) {
+            copy[index] = new Vector4f(vertices[index]);
         }
+        return copy;
     }
 }

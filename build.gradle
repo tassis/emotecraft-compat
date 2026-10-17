@@ -55,6 +55,15 @@ dependencies {
     compileOnly "maven.modrinth:emotecraft:${emotecraft_version}"
     compileOnly "maven.modrinth:3dskinlayers:${skinlayers_version}"
 
+    // Keep the complete compatibility stack available to the development client
+    // without bundling any of these optional mods in the published artifact.
+    runtimeOnly "io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}"
+    runtimeOnly "dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}"
+    runtimeOnly "maven.modrinth:entity-model-features:${emf_version}"
+    runtimeOnly "maven.modrinth:entitytexturefeatures:${etf_version}"
+    runtimeOnly "maven.modrinth:emotecraft:${emotecraft_version}"
+    runtimeOnly "maven.modrinth:3dskinlayers:${skinlayers_version}"
+
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
     testImplementation "io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}"

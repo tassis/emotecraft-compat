@@ -65,8 +65,16 @@ public final class PlayerAnimatorBendCompat {
         LAYER_SOURCES.remove(outerPart);
     }
 
+    public static synchronized void clearLayerSources() {
+        LAYER_SOURCES.clear();
+    }
+
     static synchronized LayerSource getLayerSource(ModelPart modelPart) {
         return modelPart == null ? null : LAYER_SOURCES.get(modelPart);
+    }
+
+    static synchronized int layerSourceCount() {
+        return LAYER_SOURCES.size();
     }
 
     static Direction bendDirection(String partName) {

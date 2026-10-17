@@ -9,6 +9,7 @@ import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
+import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CompatibilitySignatureTest {
@@ -27,6 +28,8 @@ class CompatibilitySignatureTest {
         assertEquals(boolean.class, api.getMethod("registerPauseCondition", Function.class).getReturnType());
         assertEquals(boolean.class, api.getMethod("registerVanillaModelCondition", Function.class).getReturnType());
         assertEquals(boolean.class, context.getMethod("isEntityAnimPaused").getReturnType());
+        assertThrows(NoSuchMethodException.class, () -> context.getMethod("isEntityAnimPausedWrapped"));
+        assertThrows(NoSuchMethodException.class, () -> context.getMethod("isEntityForcedToVanillaModel"));
     }
 
     @Test

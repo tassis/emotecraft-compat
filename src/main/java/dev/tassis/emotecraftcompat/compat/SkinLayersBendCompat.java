@@ -1,5 +1,7 @@
 package dev.tassis.emotecraftcompat.compat;
 
+import com.mojang.blaze3d.vertex.PoseStack;
+import com.mojang.blaze3d.vertex.VertexConsumer;
 import dev.tassis.emotecraftcompat.EmotecraftCompatMod;
 import dev.tassis.emotecraftcompat.state.EmoteStateManager;
 import dev.kosmx.playerAnim.impl.IAnimatedPlayer;
@@ -13,17 +15,22 @@ import dev.tr7zw.skinlayers.api.SkinLayersAPI;
 import dev.tr7zw.skinlayers.SkinLayersModBase;
 import io.github.kosmx.bendylib.MutableCuboid;
 import io.github.kosmx.bendylib.ModelPartAccessor;
+import io.github.kosmx.bendylib.ICuboidBuilder;
 import io.github.kosmx.bendylib.impl.BendableCuboid;
+import io.github.kosmx.bendylib.impl.ICuboid;
 import io.github.kosmx.bendylib.impl.RememberingPos;
+import net.minecraft.core.Direction;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.util.Tuple;
 import org.joml.Vector3f;
 import org.joml.Vector4f;
 
+
 public final class SkinLayersBendCompat {
     private static final float MODEL_UNIT_SCALE = 16.0F;
     private static final float LAYER_HEIGHT_SCALE = 1.035F;
     private static final float NORMAL_EPSILON = 0.000001F;
+    private static final float ORIENTATION_EPSILON = 0.000001F;
     private static final String FAST_RENDER_BEND_MUTATOR = "emotecraft_3d_skin_layer_bend";
     private static final MeshTransformer RESET_FAST_RENDER_BEND = new MeshTransformer() {
         @Override
@@ -184,6 +191,7 @@ public final class SkinLayersBendCompat {
 
         @Override
         public void transform(Vector3f normal, Vector4f[] vertices) {
+            float normalOrientation = normalOrientation(normal, vertices);
             RememberingPos[] positions = new RememberingPos[vertices.length];
             for (int index = 0; index < vertices.length; index++) {
                 Vector4f vertex = vertices[index];
@@ -213,29 +221,56 @@ public final class SkinLayersBendCompat {
                         1.0F
                 );
             }
-            updateNormal(normal, vertices);
+            updateNormal(normal, vertices, normalOrientation);
         }
 
         @Override
         public void transform(ModelPart.Cube cube) {
-            applyFastRenderBend((MutableCuboid) (Object) cube, bendableCuboid);
+            applyFastRenderBend((MutableCuboid) (Object) cube, bendableCuboid, transformSpace);
         }
     }
 
     static boolean applyFastRenderBend(MutableCuboid mutableCube, BendableCuboid sourceBend) {
+        return applyFastRenderBend(
+                mutableCube,
+                sourceBend,
+                new TransformSpace(1.0F, 1.0F, 1.0F, 0.0F, 0.0F, 0.0F)
+        );
+    }
+
+    static boolean applyFastRenderBend(
+            MutableCuboid mutableCube,
+            BendableCuboid sourceBend,
+            float xScale,
+            float yScale,
+            float zScale,
+            float xOffset,
+            float yOffset,
+            float zOffset
+    ) {
+        return applyFastRenderBend(
+                mutableCube,
+                sourceBend,
+                new TransformSpace(xScale, yScale, zScale, xOffset, yOffset, zOffset)
+        );
+    }
+
+    private static boolean applyFastRenderBend(
+            MutableCuboid mutableCube,
+            BendableCuboid sourceBend,
+            TransformSpace transformSpace
+    ) {
         if (!mutableCube.hasMutator(FAST_RENDER_BEND_MUTATOR)) {
             mutableCube.registerMutator(
                     FAST_RENDER_BEND_MUTATOR,
-                    data -> new BendableCuboid.Builder()
-                            .setDirection(sourceBend.getBendDirection())
-                            .build(data)
+                    data -> new TransformSpaceCuboid(data, sourceBend.getBendDirection())
             );
         }
 
-        if (!(mutableCube.getAndActivateMutator(FAST_RENDER_BEND_MUTATOR) instanceof BendableCuboid cubeBend)) {
+        if (!(mutableCube.getAndActivateMutator(FAST_RENDER_BEND_MUTATOR) instanceof TransformSpaceCuboid cubeBend)) {
             return false;
         }
-        cubeBend.applyBend(sourceBend.getBendAxis(), sourceBend.getBend());
+        cubeBend.applyBend(sourceBend, transformSpace);
         return true;
     }
 
@@ -248,26 +283,124 @@ public final class SkinLayersBendCompat {
         return true;
     }
 
-    private static void updateNormal(Vector3f normal, Vector4f[] vertices) {
-        Vector3f originalNormal = new Vector3f(normal);
-        Vector3f firstEdge = subtract(vertices[1], vertices[0]);
-        Vector3f secondEdge = subtract(vertices[2], vertices[0]);
-        Vector3f transformedNormal = firstEdge.cross(secondEdge);
-
-        if (transformedNormal.lengthSquared() < NORMAL_EPSILON && vertices.length > 3) {
-            firstEdge = subtract(vertices[2], vertices[0]);
-            secondEdge = subtract(vertices[3], vertices[0]);
-            transformedNormal = firstEdge.cross(secondEdge);
+    private static float normalOrientation(Vector3f normal, Vector4f[] vertices) {
+        if (!isFinite(normal)) {
+            return 0.0F;
         }
-        if (transformedNormal.lengthSquared() < NORMAL_EPSILON) {
+
+        float normalLengthSquared = normal.lengthSquared();
+        Vector3f geometricNormal = geometricNormal(vertices);
+        if (normalLengthSquared < NORMAL_EPSILON || geometricNormal == null) {
+            return 0.0F;
+        }
+
+        float denominator = (float) Math.sqrt(normalLengthSquared * geometricNormal.lengthSquared());
+        float alignment = normal.dot(geometricNormal) / denominator;
+        if (!Float.isFinite(alignment) || Math.abs(alignment) <= ORIENTATION_EPSILON) {
+            return 0.0F;
+        }
+        return Math.copySign(1.0F, alignment);
+    }
+
+    private static void updateNormal(Vector3f normal, Vector4f[] vertices, float normalOrientation) {
+        if (normalOrientation == 0.0F) {
             return;
         }
 
-        transformedNormal.normalize();
-        if (transformedNormal.dot(originalNormal) < 0.0F) {
-            transformedNormal.negate();
+        Vector3f transformedNormal = geometricNormal(vertices);
+        if (transformedNormal == null) {
+            return;
         }
-        normal.set(transformedNormal);
+        normal.set(transformedNormal.normalize().mul(normalOrientation));
+    }
+
+    private static Vector3f geometricNormal(Vector4f[] vertices) {
+        if (vertices == null || vertices.length < 3) {
+            return null;
+        }
+
+        Vector3f firstEdge = subtract(vertices[1], vertices[0]);
+        Vector3f secondEdge = subtract(vertices[2], vertices[0]);
+        Vector3f normal = firstEdge.cross(secondEdge);
+
+        if ((!isFinite(normal) || normal.lengthSquared() < NORMAL_EPSILON) && vertices.length > 3) {
+            firstEdge = subtract(vertices[2], vertices[0]);
+            secondEdge = subtract(vertices[3], vertices[0]);
+            normal = firstEdge.cross(secondEdge);
+        }
+        if (!isFinite(normal) || normal.lengthSquared() < NORMAL_EPSILON) {
+            return null;
+        }
+        return normal;
+    }
+
+    private static boolean isFinite(Vector3f vector) {
+        return Float.isFinite(vector.x()) && Float.isFinite(vector.y()) && Float.isFinite(vector.z());
+    }
+
+    /**
+     * BendyLib bends vertices in vanilla model space, while 3D Skin Layers builds its fast-render
+     * cuboids in a scaled and offset space. Converting each original vertex before and after the
+     * bend applies the required S^-1 * Bend * S transform without losing BendyLib's subdivision.
+     */
+    private static final class TransformSpaceCuboid implements ICuboid {
+        private final BendableCuboid delegate;
+
+        private TransformSpaceCuboid(
+                ICuboidBuilder.Data data,
+                Direction bendDirection
+        ) {
+            delegate = new BendableCuboid.Builder()
+                    .setDirection(bendDirection)
+                    .build(data);
+        }
+
+        private void applyBend(BendableCuboid sourceBend, TransformSpace transformSpace) {
+            delegate.iteratePositions(position -> {
+                Vector3f original = position.getOriginalPos();
+                RememberingPos transformed = new RememberingPos(
+                        transformSpace.toVanillaX(original.x()),
+                        transformSpace.toVanillaY(original.y()),
+                        transformSpace.toVanillaZ(original.z())
+                );
+                sourceBend.applyBend(
+                        sourceBend.getBendAxis(),
+                        sourceBend.getBend(),
+                        consumer -> consumer.accept(transformed)
+                );
+                Vector3f result = transformed.getPos();
+                position.setPos(new Vector3f(
+                        transformSpace.fromVanillaX(result.x()),
+                        transformSpace.fromVanillaY(result.y()),
+                        transformSpace.fromVanillaZ(result.z())
+                ));
+            });
+        }
+
+        @Override
+        public void render(
+                PoseStack.Pose pose,
+                VertexConsumer vertexConsumer,
+                int light,
+                int overlay,
+                int color
+        ) {
+            delegate.render(pose, vertexConsumer, light, overlay, color);
+        }
+
+        @Override
+        public void copyState(ICuboid other) {
+            if (other instanceof TransformSpaceCuboid transformSpaceCuboid) {
+                delegate.copyState(transformSpaceCuboid.delegate);
+            } else {
+                delegate.copyState(other);
+            }
+        }
+
+        @Override
+        public boolean disableAfterDraw() {
+            return delegate.disableAfterDraw();
+        }
     }
 
     private static Vector3f subtract(Vector4f left, Vector4f right) {

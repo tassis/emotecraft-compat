@@ -2,6 +2,7 @@ package dev.tassis.emotecraftcompat.state;
 
 import dev.tassis.emotecraftcompat.EmotecraftCompatMod;
 import dev.tassis.emotecraftcompat.compat.EmfCompat;
+import dev.tassis.emotecraftcompat.compat.PlayerAnimatorBendCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
@@ -57,12 +58,13 @@ public final class EmoteStateManager {
 
     public static void remove(UUID playerId) {
         ACTIVE_EMOTES.remove(playerId);
-        EmfCompat.forgetPlayerState(playerId);
+        EmfCompat.warnIfLegacyStateRemains(playerId);
     }
 
     public static void clear() {
         ACTIVE_EMOTES.clear();
-        EmfCompat.clearTrackedStates();
+        EmfCompat.warnIfLegacyStatesRemain();
+        PlayerAnimatorBendCompat.clearLayerSources();
     }
 
     private static boolean isPlayerEmoting(Player player) {
