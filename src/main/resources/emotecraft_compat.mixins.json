@@ -4,6 +4,9 @@
   "package": "dev.tassis.emotecraftcompat.mixin",
   "plugin": "dev.tassis.emotecraftcompat.mixin.OptionalCompatMixinPlugin",
   "compatibilityLevel": "JAVA_21",
+  "mixins": [
+    "EmotecraftConfigurationSyncMixin"
+  ],
   "client": [
     "EMFAnimationEntityContextMixin",
     "PlayerModelLayerBendMixin",

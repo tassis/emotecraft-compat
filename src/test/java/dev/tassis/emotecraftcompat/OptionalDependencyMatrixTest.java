@@ -11,6 +11,7 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OptionalDependencyMatrixTest {
     private static final String EMF_MIXIN = "compat.EMFAnimationEntityContextMixin";
+    private static final String SERVER_SYNC_MIXIN = "compat.EmotecraftConfigurationSyncMixin";
     private static final String LAYER_MIXIN = "compat.PlayerModelLayerBendMixin";
     private static final String APPLIER_MIXIN = "compat.PlayerAnimatorAnimationApplierMixin";
     private static final String BEND_HELPER_MIXIN = "compat.PlayerAnimatorBendHelperMixin";
@@ -19,9 +20,26 @@ class OptionalDependencyMatrixTest {
     void onlyEmotecraftLoadsNoOptionalCompatibility() {
         Predicate<String> loaded = loaded("emotecraft");
 
+        assertTrue(applies(SERVER_SYNC_MIXIN, loaded));
         assertFalse(applies(EMF_MIXIN, loaded));
         assertBendMixins(false, loaded);
         assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(loaded));
+    }
+
+    @Test
+    void serverSyncMixinRequiresEmotecraft() {
+        assertFalse(applies(SERVER_SYNC_MIXIN, loaded()));
+        assertTrue(applies(SERVER_SYNC_MIXIN, loaded("emotecraft")));
+        assertTrue(OptionalCompatMixinPlugin.shouldApplyMixin(
+                SERVER_SYNC_MIXIN,
+                loaded("emotecraft"),
+                ignored -> "2.4.12+1.21.1-forge"
+        ));
+        assertFalse(OptionalCompatMixinPlugin.shouldApplyMixin(
+                SERVER_SYNC_MIXIN,
+                loaded("emotecraft"),
+                ignored -> "2.4.13"
+        ));
     }
 
     @Test

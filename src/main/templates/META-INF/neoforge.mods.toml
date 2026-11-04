@@ -17,14 +17,14 @@ modId="neoforge"
 type="required"
 versionRange="[${neo_version},)"
 ordering="NONE"
-side="CLIENT"
+side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="minecraft"
 type="required"
 versionRange="[${minecraft_version}]"
 ordering="NONE"
-side="CLIENT"
+side="BOTH"
 
 [[dependencies.${mod_id}]]
 modId="emotecraft"
@@ -32,6 +32,13 @@ type="required"
 versionRange="[0,)"
 ordering="AFTER"
 side="CLIENT"
+
+[[dependencies.${mod_id}]]
+modId="emotecraft"
+type="optional"
+versionRange="[0,)"
+ordering="AFTER"
+side="SERVER"
 
 [[dependencies.${mod_id}]]
 modId="entity_model_features"

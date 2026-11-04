@@ -1,10 +1,11 @@
 # Emotecraft Compat
 
-A client-side compatibility mod for NeoForge 1.21.1, inspired by
+A compatibility mod for NeoForge 1.21.1, inspired by
 [catman0221/emotecraft-fix-animate-texture](https://github.com/catman0221/emotecraft-fix-animate-texture).
 It keeps Emotecraft animations compatible with Entity Model Features, Player
 Animator, BendyLib, and 3D Skin Layers while leaving unrelated render paths
-untouched.
+untouched. When installed on a server, it also repairs Emotecraft 2.4.12's
+server-emote definition synchronization.
 
 ## Requirements
 
@@ -12,8 +13,16 @@ untouched.
 - NeoForge 21.1.249 or newer in the 21.1 line
 - Emotecraft
 
-This mod is client-side. EMF, Player Animator, BendyLib, and 3D Skin Layers are
-optional; each integration activates only when its required stack is present.
+Client and server installations are independent. Installing the mod only on a
+client enables the rendering integrations; installing it on a server with
+Emotecraft enables the synchronization repair. EMF, Player Animator, BendyLib,
+and 3D Skin Layers are optional, and each integration activates only when its
+required stack is present.
+
+The server synchronization repair is deliberately limited to Emotecraft
+2.4.12, whose published NeoForge build contains the affected synthetic sender.
+Later Emotecraft versions are left untouched so an upstream fix is not
+overridden.
 
 ## Tested Compatibility
 

@@ -5,13 +5,14 @@ import org.junit.jupiter.api.Test;
 import java.io.IOException;
 import java.nio.charset.StandardCharsets;
 import java.util.Collections;
+import java.util.List;
 
 import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MetadataContractTest {
     @Test
-    void generatedMetadataDeclaresClientIntegrationsAndMixinConfig() throws IOException {
+    void generatedMetadataDeclaresIndependentClientAndServerIntegrations() throws IOException {
         String metadata = resource("META-INF/neoforge.mods.toml");
 
         assertTrue(metadata.contains("license=\"MIT\""));
@@ -22,7 +23,22 @@ class MetadataContractTest {
         assertTrue(metadata.contains("modId=\"bendylib\""));
         assertTrue(metadata.contains("modId=\"skinlayers3d\""));
         assertTrue(metadata.contains("config=\"emotecraft_compat.mixins.json\""));
-        assertTrue(dependencyBlock(metadata, "emotecraft").contains("type=\"required\""));
+        assertTrue(dependencyBlock(metadata, "neoforge").contains("side=\"BOTH\""));
+        assertTrue(dependencyBlock(metadata, "minecraft").contains("side=\"BOTH\""));
+        assertTrue(metadata.contains("""
+                modId="emotecraft"
+                type="required"
+                versionRange="[0,)"
+                ordering="AFTER"
+                side="CLIENT"
+                """));
+        assertTrue(metadata.contains("""
+                modId="emotecraft"
+                type="optional"
+                versionRange="[0,)"
+                ordering="AFTER"
+                side="SERVER"
+                """));
         assertTrue(dependencyBlock(metadata, "entity_model_features").contains("type=\"optional\""));
         assertTrue(dependencyBlock(metadata, "playeranimator").contains("type=\"optional\""));
         assertTrue(dependencyBlock(metadata, "playeranimator").contains("versionRange=\"[2.0,)\""));
@@ -37,6 +53,7 @@ class MetadataContractTest {
         String mixins = resource("emotecraft_compat.mixins.json");
 
         assertTrue(mixins.contains("EMFAnimationEntityContextMixin"));
+        assertTrue(mixins.contains("EmotecraftConfigurationSyncMixin"));
         assertTrue(mixins.contains("PlayerModelLayerBendMixin"));
         assertTrue(mixins.contains("PlayerAnimatorAnimationApplierMixin"));
         assertTrue(mixins.contains("PlayerAnimatorBendHelperMixin"));
@@ -57,12 +74,14 @@ class MetadataContractTest {
     }
 
     private static String dependencyBlock(String metadata, String modId) {
-        for (String block : metadata.split("(?=\\[\\[dependencies\\.)")) {
-            if (block.startsWith("[[dependencies.emotecraft_compat]]")
-                    && block.contains("modId=\"" + modId + "\"")) {
-                return block;
-            }
-        }
-        return "";
+        return dependencyBlocks(metadata, modId).stream().findFirst().orElse("");
+    }
+
+    private static List<String> dependencyBlocks(String metadata, String modId) {
+        return List.of(metadata.split("(?=\\[\\[dependencies\\.)")).stream()
+                .filter(block -> block.startsWith("[[dependencies.emotecraft_compat]]"))
+                .filter(block -> block.contains("modId=\"" + modId + "\""))
+                .distinct()
+                .toList();
     }
 }

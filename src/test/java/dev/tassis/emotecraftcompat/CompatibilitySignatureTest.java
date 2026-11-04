@@ -5,6 +5,7 @@ import net.minecraft.client.model.geom.ModelPart;
 import org.junit.jupiter.api.Test;
 
 import java.lang.reflect.Method;
+import java.nio.ByteBuffer;
 import java.util.function.Function;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
@@ -18,6 +19,20 @@ class CompatibilitySignatureTest {
         Class<?> playerEntity = load("io.github.kosmx.emotes.main.mixinFunctions.IPlayerEntity");
 
         assertEquals(boolean.class, playerEntity.getMethod("isPlayingEmote").getReturnType());
+    }
+
+    @Test
+    void emotecraftNeoForgeBuildContainsTheBrokenConfigurationSenderHook() throws Exception {
+        Class<?> forgeNetwork = load("io.github.kosmx.emotes.neoforge.network.ForgeNetwork");
+        Class<?> payloadContext = load("net.neoforged.neoforge.network.handling.IPayloadContext");
+
+        Method sender = forgeNetwork.getDeclaredMethod(
+                "lambda$registerPlay$6",
+                payloadContext,
+                ByteBuffer.class
+        );
+        assertNotNull(sender);
+        assertEquals(void.class, sender.getReturnType());
     }
 
     @Test

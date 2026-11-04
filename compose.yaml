@@ -8,5 +8,18 @@ services:
       - .:/workspace
       - gradle-cache:/home/gradle/.gradle
 
+  smoke-server:
+    image: eclipse-temurin:21-jre
+    user: "${SMOKE_UID:-1000}:${SMOKE_GID:-1000}"
+    working_dir: /server
+    command: ["./run.sh", "nogui"]
+    stdin_open: true
+    tty: true
+    ports:
+      - "127.0.0.1:25565:25565"
+    volumes:
+      - ./.smoke/server:/server
+      - ./build/libs/emotecraft_compat-neoforge-1.21.1-0.2.0.jar:/server/mods/emotecraft_compat-neoforge-1.21.1-0.2.0.jar:ro
+
 volumes:
   gradle-cache:

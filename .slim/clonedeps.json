@@ -1,6 +1,6 @@
 {
   "version": "1.0.0",
-  "updatedAt": "2026-10-16T00:00:00.000Z",
+  "updatedAt": "2026-11-04T00:00:00.000Z",
   "dependencies": [
     {
       "name": "3D Skin Layers",
@@ -19,6 +19,15 @@
       "path": ".slim/clonedeps/repos/KosmX__minecraftPlayerAnimator",
       "packagePath": "minecraft/common/src/main/java/dev/kosmx/playerAnim",
       "reason": "Defines BendyLib bend lifecycle and the dormant 3D Skin Layers transformer integration"
+    },
+    {
+      "name": "Emotecraft",
+      "resolvedVersion": "2.4.12+1.21.1-forge",
+      "repoUrl": "https://github.com/KosmX/emotes.git",
+      "ref": "44a60a01a7897e3439cf14f9961dd74898c6c10a",
+      "path": ".slim/clonedeps/repos/KosmX__emotes",
+      "packagePath": "minecraft/archCommon/src/main/java/io/github/kosmx/emotes",
+      "reason": "Server emote synchronization, client registry, and emote menu indexing implementation"
     }
   ]
 }

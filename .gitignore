@@ -2,6 +2,7 @@
 build/
 run/
 run-client/
+.smoke/
 logs/
 crash-reports/
 .idea/
