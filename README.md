@@ -10,7 +10,7 @@ server-emote definition synchronization.
 ## Requirements
 
 - Minecraft 1.21.1
-- NeoForge 21.1.249 or newer in the 21.1 line
+- NeoForge 21.1.1 or newer in the 21.1 line
 - Emotecraft
 
 Client and server installations are independent. Installing the mod only on a
@@ -27,7 +27,9 @@ overridden.
 ## Tested Compatibility
 
 The following versions have been tested successfully in-game on Minecraft
-1.21.1 with NeoForge 21.1.249 and Emotecraft 2.4.12:
+1.21.1 with NeoForge 21.1.249 and Emotecraft 2.4.12. The mod's declared
+minimum is NeoForge 21.1.1, which is also covered by automated build and unit
+tests:
 
 - Entity Model Features 3.3.5
 - 3D Skin Layers 1.11.2
