@@ -3,14 +3,17 @@ package dev.tassis.emotecraftcompat;
 import dev.tassis.emotecraftcompat.mixin.OptionalCompatMixinPlugin;
 import net.minecraft.client.model.geom.ModelPart;
 import org.junit.jupiter.api.Test;
+import org.objectweb.asm.ClassReader;
+import org.objectweb.asm.tree.ClassNode;
 
+import java.io.IOException;
+import java.io.InputStream;
 import java.lang.reflect.Method;
-import java.nio.ByteBuffer;
-import java.util.function.Function;
+import java.util.Set;
+import java.util.function.Predicate;
 
 import static org.junit.jupiter.api.Assertions.assertEquals;
 import static org.junit.jupiter.api.Assertions.assertNotNull;
-import static org.junit.jupiter.api.Assertions.assertThrows;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class CompatibilitySignatureTest {
@@ -22,33 +25,21 @@ class CompatibilitySignatureTest {
     }
 
     @Test
-    void emotecraftNeoForgeBuildContainsTheBrokenConfigurationSenderHook() throws Exception {
-        Class<?> forgeNetwork = load("io.github.kosmx.emotes.neoforge.network.ForgeNetwork");
-        Class<?> payloadContext = load("net.neoforged.neoforge.network.handling.IPayloadContext");
+    void emfExposesConditionAndEntityControlApis() throws IOException {
+        ClassNode api = classNode("traben/entity_model_features/EMFAnimationApi");
+        String conditionDescriptor = "(Ljava/util/function/Function;)Z";
+        String entityDescriptor = "(Ltraben/entity_model_features/utils/EMFEntity;)Z";
 
-        Method sender = forgeNetwork.getDeclaredMethod(
-                "lambda$registerPlay$6",
-                payloadContext,
-                ByteBuffer.class
-        );
-        assertNotNull(sender);
-        assertEquals(void.class, sender.getReturnType());
+        assertTrue(hasMethod(api, "registerPauseCondition", conditionDescriptor));
+        assertTrue(hasMethod(api, "registerVanillaModelCondition", conditionDescriptor));
+        assertTrue(hasMethod(api, "pauseAllCustomAnimationsForEntity", entityDescriptor));
+        assertTrue(hasMethod(api, "resumeAllCustomAnimationsForEntity", entityDescriptor));
+        assertTrue(hasMethod(api, "lockEntityToVanillaModel", entityDescriptor));
+        assertTrue(hasMethod(api, "unlockEntityToVanillaModel", entityDescriptor));
     }
 
     @Test
-    void emfExposesModernConditionsAndLegacyPauseHook() throws Exception {
-        Class<?> api = load("traben.entity_model_features.EMFAnimationApi");
-        Class<?> context = load("traben.entity_model_features.models.animation.EMFAnimationEntityContext");
-
-        assertEquals(boolean.class, api.getMethod("registerPauseCondition", Function.class).getReturnType());
-        assertEquals(boolean.class, api.getMethod("registerVanillaModelCondition", Function.class).getReturnType());
-        assertEquals(boolean.class, context.getMethod("isEntityAnimPaused").getReturnType());
-        assertThrows(NoSuchMethodException.class, () -> context.getMethod("isEntityAnimPausedWrapped"));
-        assertThrows(NoSuchMethodException.class, () -> context.getMethod("isEntityForcedToVanillaModel"));
-    }
-
-    @Test
-    void playerAnimatorMixinTargetsMatchNeoForgeDescriptors() throws Exception {
+    void playerAnimatorMixinTargetsMatchForgeDescriptors() throws Exception {
         Class<?> applier = load("dev.kosmx.playerAnim.impl.animation.AnimationApplier");
         Class<?> bendHelper = load("dev.kosmx.playerAnim.impl.animation.BendHelper");
 
@@ -57,33 +48,36 @@ class CompatibilitySignatureTest {
         assertNotNull(updatePart);
         assertNotNull(bend);
 
-        OptionalCompatMixinPlugin plugin = new OptionalCompatMixinPlugin();
-        assertTrue(plugin.shouldApplyMixin(
-                applier.getName(),
-                "dev.tassis.emotecraftcompat.mixin.PlayerAnimatorAnimationApplierMixin"
+        Predicate<String> loaded = Set.of("playeranimator", "bendylib")::contains;
+        assertTrue(OptionalCompatMixinPlugin.shouldApplyMixin(
+                "dev.tassis.emotecraftcompat.mixin.PlayerAnimatorAnimationApplierMixin",
+                loaded
         ));
-        assertTrue(plugin.shouldApplyMixin(
-                bendHelper.getName(),
-                "dev.tassis.emotecraftcompat.mixin.PlayerAnimatorBendHelperMixin"
+        assertTrue(OptionalCompatMixinPlugin.shouldApplyMixin(
+                "dev.tassis.emotecraftcompat.mixin.PlayerAnimatorBendHelperMixin",
+                loaded
         ));
-    }
-
-    @Test
-    void skinLayersExposesBendTransformerApi() throws Exception {
-        Class<?> api = load("dev.tr7zw.skinlayers.api.SkinLayersAPI");
-        Class<?> layerApi = load("dev.tr7zw.skinlayers.api.LayerFeatureTransformerAPI");
-        Class<?> layerTransformer = load("dev.tr7zw.skinlayers.api.LayerFeatureTransformerAPI$LayerTransformer");
-        Class<?> provider = load("dev.tr7zw.skinlayers.api.MeshTransformerProvider");
-        Class<?> transformer = load("dev.tr7zw.skinlayers.api.MeshTransformer");
-
-        assertEquals(void.class, api.getMethod("setupMeshTransformerProvider", provider).getReturnType());
-        assertEquals(provider, api.getMethod("getMeshTransformerProvider").getReturnType());
-        assertEquals(void.class, layerApi.getMethod("setLayerTransformer", layerTransformer).getReturnType());
-        assertEquals(layerTransformer, layerApi.getMethod("getTransformer").getReturnType());
-        assertEquals(transformer, provider.getMethod("prepareTransformer", ModelPart.class).getReturnType());
+        assertTrue(OptionalCompatMixinPlugin.shouldApplyMixin(
+                "dev.tassis.emotecraftcompat.mixin.PlayerModelLayerBendMixin",
+                loaded
+        ));
     }
 
     private static Class<?> load(String className) throws ClassNotFoundException {
         return Class.forName(className, false, CompatibilitySignatureTest.class.getClassLoader());
+    }
+
+    private static ClassNode classNode(String internalName) throws IOException {
+        String resource = internalName + ".class";
+        try (InputStream stream = CompatibilitySignatureTest.class.getClassLoader().getResourceAsStream(resource)) {
+            assertNotNull(stream, "Missing classpath resource " + resource);
+            ClassNode node = new ClassNode();
+            new ClassReader(stream).accept(node, ClassReader.SKIP_CODE | ClassReader.SKIP_DEBUG | ClassReader.SKIP_FRAMES);
+            return node;
+        }
+    }
+
+    private static boolean hasMethod(ClassNode owner, String name, String descriptor) {
+        return owner.methods.stream().anyMatch(method -> method.name.equals(name) && method.desc.equals(descriptor));
     }
 }

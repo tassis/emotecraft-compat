@@ -10,88 +10,37 @@ import static org.junit.jupiter.api.Assertions.assertFalse;
 import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class OptionalDependencyMatrixTest {
-    private static final String EMF_MIXIN = "compat.EMFAnimationEntityContextMixin";
-    private static final String SERVER_SYNC_MIXIN = "compat.EmotecraftConfigurationSyncMixin";
-    private static final String LAYER_MIXIN = "compat.PlayerModelLayerBendMixin";
     private static final String APPLIER_MIXIN = "compat.PlayerAnimatorAnimationApplierMixin";
     private static final String BEND_HELPER_MIXIN = "compat.PlayerAnimatorBendHelperMixin";
+    private static final String PLAYER_MODEL_LAYER_MIXIN = "compat.PlayerModelLayerBendMixin";
 
     @Test
     void onlyEmotecraftLoadsNoOptionalCompatibility() {
         Predicate<String> loaded = loaded("emotecraft");
 
-        assertTrue(applies(SERVER_SYNC_MIXIN, loaded));
-        assertFalse(applies(EMF_MIXIN, loaded));
         assertBendMixins(false, loaded);
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(loaded));
-    }
-
-    @Test
-    void serverSyncMixinRequiresEmotecraft() {
-        assertFalse(applies(SERVER_SYNC_MIXIN, loaded()));
-        assertTrue(applies(SERVER_SYNC_MIXIN, loaded("emotecraft")));
-        assertTrue(OptionalCompatMixinPlugin.shouldApplyMixin(
-                SERVER_SYNC_MIXIN,
-                loaded("emotecraft"),
-                ignored -> "2.4.12+1.21.1-forge"
-        ));
-        assertFalse(OptionalCompatMixinPlugin.shouldApplyMixin(
-                SERVER_SYNC_MIXIN,
-                loaded("emotecraft"),
-                ignored -> "2.4.13"
-        ));
-    }
-
-    @Test
-    void emfWorksWithoutThePlayerAnimationStack() {
-        Predicate<String> loaded = loaded("emotecraft", "entity_model_features");
-
-        assertTrue(applies(EMF_MIXIN, loaded));
-        assertBendMixins(false, loaded);
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(loaded));
     }
 
     @Test
     void partialPlayerAnimationStacksStayDisabled() {
-        Predicate<String> playerAnimatorOnly = loaded("emotecraft", "playeranimator");
-        Predicate<String> bendyLibOnly = loaded("emotecraft", "bendylib");
-
-        assertBendMixins(false, playerAnimatorOnly);
-        assertBendMixins(false, bendyLibOnly);
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(playerAnimatorOnly));
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(bendyLibOnly));
+        assertBendMixins(false, loaded("emotecraft", "playeranimator"));
+        assertBendMixins(false, loaded("emotecraft", "bendylib"));
     }
 
     @Test
-    void playerAnimatorAndBendyLibEnableVanillaLayerRepair() {
-        Predicate<String> loaded = loaded("emotecraft", "playeranimator", "bendylib");
-
-        assertBendMixins(true, loaded);
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(loaded));
-    }
-
-    @Test
-    void skinLayersBendRequiresTheCompleteStack() {
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(
-                loaded("emotecraft", "skinlayers3d", "playeranimator")
-        ));
-        assertFalse(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(
-                loaded("emotecraft", "skinlayers3d", "bendylib")
-        ));
-        assertTrue(EmotecraftCompatMod.canRegisterSkinLayersBendCompat(
-                loaded("emotecraft", "skinlayers3d", "playeranimator", "bendylib")
-        ));
+    void playerAnimatorAndBendyLibEnableBendRepair() {
+        assertBendMixins(true, loaded("emotecraft", "playeranimator", "bendylib"));
     }
 
     private static void assertBendMixins(boolean expected, Predicate<String> loaded) {
         if (expected) {
-            assertTrue(applies(LAYER_MIXIN, loaded));
             assertTrue(applies(APPLIER_MIXIN, loaded));
             assertTrue(applies(BEND_HELPER_MIXIN, loaded));
+            assertTrue(applies(PLAYER_MODEL_LAYER_MIXIN, loaded));
         } else {
-            assertFalse(applies(LAYER_MIXIN, loaded));
             assertFalse(applies(APPLIER_MIXIN, loaded));
             assertFalse(applies(BEND_HELPER_MIXIN, loaded));
+            assertFalse(applies(PLAYER_MODEL_LAYER_MIXIN, loaded));
         }
     }
 

@@ -12,8 +12,8 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class MetadataContractTest {
     @Test
-    void generatedMetadataDeclaresIndependentClientAndServerIntegrations() throws IOException {
-        String metadata = resource("META-INF/neoforge.mods.toml");
+    void generatedMetadataDeclaresForgeClientIntegrations() throws IOException {
+        String metadata = resource("META-INF/mods.toml");
 
         assertTrue(metadata.contains("license=\"MIT\""));
         assertTrue(metadata.contains("modId=\"emotecraft_compat\""));
@@ -21,43 +21,38 @@ class MetadataContractTest {
         assertTrue(metadata.contains("modId=\"entity_model_features\""));
         assertTrue(metadata.contains("modId=\"playeranimator\""));
         assertTrue(metadata.contains("modId=\"bendylib\""));
-        assertTrue(metadata.contains("modId=\"skinlayers3d\""));
-        assertTrue(metadata.contains("config=\"emotecraft_compat.mixins.json\""));
-        assertTrue(dependencyBlock(metadata, "neoforge").contains("side=\"BOTH\""));
+        assertTrue(dependencyBlock(metadata, "forge").contains("side=\"BOTH\""));
+        assertTrue(dependencyBlock(metadata, "forge").contains("versionRange=\"[47.4.28,48)\""));
         assertTrue(dependencyBlock(metadata, "minecraft").contains("side=\"BOTH\""));
+        assertTrue(dependencyBlock(metadata, "minecraft").contains("versionRange=\"[1.20.1]\""));
         assertTrue(metadata.contains("""
                 modId="emotecraft"
-                type="required"
-                versionRange="[0,)"
+                mandatory=true
+                versionRange="[2.2.7-b.build.50]"
                 ordering="AFTER"
                 side="CLIENT"
                 """));
-        assertTrue(metadata.contains("""
-                modId="emotecraft"
-                type="optional"
-                versionRange="[0,)"
-                ordering="AFTER"
-                side="SERVER"
-                """));
-        assertTrue(dependencyBlock(metadata, "entity_model_features").contains("type=\"optional\""));
-        assertTrue(dependencyBlock(metadata, "playeranimator").contains("type=\"optional\""));
-        assertTrue(dependencyBlock(metadata, "playeranimator").contains("versionRange=\"[2.0,)\""));
-        assertTrue(dependencyBlock(metadata, "bendylib").contains("type=\"optional\""));
-        assertTrue(dependencyBlock(metadata, "skinlayers3d").contains("type=\"optional\""));
-        assertFalse(metadata.contains("modId=\"tacz\""));
+        assertTrue(dependencyBlock(metadata, "entity_model_features").contains("mandatory=false"));
+        assertTrue(dependencyBlock(metadata, "entity_model_features").contains("versionRange=\"[3.3.12]\""));
+        assertTrue(dependencyBlock(metadata, "playeranimator").contains("mandatory=false"));
+        assertTrue(dependencyBlock(metadata, "playeranimator").contains("versionRange=\"[1.0.2-rc1+1.20]\""));
+        assertTrue(dependencyBlock(metadata, "bendylib").contains("mandatory=false"));
+        assertTrue(dependencyBlock(metadata, "bendylib").contains("versionRange=\"[4.0.0]\""));
+        assertFalse(metadata.contains("modId=\"skinlayers3d\""));
         assertFalse(metadata.contains("${"));
     }
 
     @Test
-    void mixinConfigIncludesAllOptionalCompatibilityHooks() throws IOException {
+    void mixinConfigIncludesForgeCompatibilityHooks() throws IOException {
         String mixins = resource("emotecraft_compat.mixins.json");
 
-        assertTrue(mixins.contains("EMFAnimationEntityContextMixin"));
-        assertTrue(mixins.contains("EmotecraftConfigurationSyncMixin"));
-        assertTrue(mixins.contains("PlayerModelLayerBendMixin"));
         assertTrue(mixins.contains("PlayerAnimatorAnimationApplierMixin"));
         assertTrue(mixins.contains("PlayerAnimatorBendHelperMixin"));
+        assertTrue(mixins.contains("PlayerModelLayerBendMixin"));
         assertTrue(mixins.contains("OptionalCompatMixinPlugin"));
+        assertTrue(mixins.contains("\"refmap\": \"emotecraft_compat.refmap.json\""));
+        assertFalse(mixins.contains("EmotecraftConfigurationSyncMixin"));
+        assertFalse(mixins.contains("EMFAnimationEntityContextMixin"));
     }
 
     private static String resource(String name) throws IOException {
@@ -67,7 +62,11 @@ class MetadataContractTest {
         StringBuilder combined = new StringBuilder();
         for (var resource : resources) {
             try (var stream = resource.openStream()) {
-                combined.append(new String(stream.readAllBytes(), StandardCharsets.UTF_8)).append('\n');
+                String content = new String(stream.readAllBytes(), StandardCharsets.UTF_8);
+                if (content.contains("modId=\"emotecraft_compat\"")) {
+                    return content;
+                }
+                combined.append(content).append('\n');
             }
         }
         return combined.toString();

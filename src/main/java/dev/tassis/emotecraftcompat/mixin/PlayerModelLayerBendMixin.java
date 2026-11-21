@@ -1,11 +1,9 @@
 package dev.tassis.emotecraftcompat.mixin;
 
 import dev.tassis.emotecraftcompat.compat.PlayerAnimatorBendCompat;
-import dev.tassis.emotecraftcompat.state.EmoteStateManager;
 import net.minecraft.client.model.HumanoidModel;
 import net.minecraft.client.model.PlayerModel;
 import net.minecraft.client.model.geom.ModelPart;
-import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.client.renderer.RenderType;
 import net.minecraft.resources.ResourceLocation;
 import net.minecraft.world.entity.LivingEntity;
@@ -47,14 +45,11 @@ public abstract class PlayerModelLayerBendMixin<T extends LivingEntity> extends 
     @Final
     public ModelPart leftPants;
 
-    @Shadow
-    private boolean slim;
-
     @Inject(
             method = "setupAnim(Lnet/minecraft/world/entity/LivingEntity;FFFFF)V",
             at = @At("HEAD")
     )
-    private void emotecraftCompat$prepareOuterLayers(
+    private void emotecraftCompat$repairOuterLayerBendMutators(
             T entity,
             float limbSwing,
             float limbSwingAmount,
@@ -63,27 +58,6 @@ public abstract class PlayerModelLayerBendMixin<T extends LivingEntity> extends 
             float headPitch,
             CallbackInfo callback
     ) {
-        if (!(entity instanceof AbstractClientPlayer player)) {
-            return;
-        }
-
-        boolean emoteActive = EmoteStateManager.isEmoteActive(player.getUUID());
-        if (!emoteActive) {
-            PlayerAnimatorBendCompat.removeLayerSource(jacket);
-            PlayerAnimatorBendCompat.removeLayerSource(rightSleeve);
-            PlayerAnimatorBendCompat.removeLayerSource(leftSleeve);
-            PlayerAnimatorBendCompat.removeLayerSource(rightPants);
-            PlayerAnimatorBendCompat.removeLayerSource(leftPants);
-            return;
-        }
-
-        float armOffset = slim ? 0.499F : 0.998F;
-        PlayerAnimatorBendCompat.setLayerSource(jacket, body, 0.0F);
-        PlayerAnimatorBendCompat.setLayerSource(rightSleeve, rightArm, -armOffset);
-        PlayerAnimatorBendCompat.setLayerSource(leftSleeve, leftArm, armOffset);
-        PlayerAnimatorBendCompat.setLayerSource(rightPants, rightLeg, 0.0F);
-        PlayerAnimatorBendCompat.setLayerSource(leftPants, leftLeg, 0.0F);
-
         PlayerAnimatorBendCompat.ensureBendMutator("jacket", jacket);
         PlayerAnimatorBendCompat.ensureBendMutator("rightSleeve", rightSleeve);
         PlayerAnimatorBendCompat.ensureBendMutator("leftSleeve", leftSleeve);

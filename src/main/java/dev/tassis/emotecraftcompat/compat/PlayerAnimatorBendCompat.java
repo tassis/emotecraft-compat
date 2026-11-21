@@ -6,16 +6,13 @@ import io.github.kosmx.bendylib.impl.BendableCuboid;
 import net.minecraft.client.model.geom.ModelPart;
 import net.minecraft.core.Direction;
 
-import java.util.IdentityHashMap;
 import java.util.Locale;
-import java.util.Map;
 import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 
 public final class PlayerAnimatorBendCompat {
     private static final Set<String> REPAIR_LOGGED_PARTS = ConcurrentHashMap.newKeySet();
     private static final Set<String> FAILED_LOGGED_PARTS = ConcurrentHashMap.newKeySet();
-    private static final Map<ModelPart, LayerSource> LAYER_SOURCES = new IdentityHashMap<>();
 
     private PlayerAnimatorBendCompat() {
     }
@@ -53,30 +50,6 @@ public final class PlayerAnimatorBendCompat {
         }
     }
 
-    public static synchronized void setLayerSource(
-            ModelPart outerPart,
-            ModelPart sourcePart,
-            float armOffset
-    ) {
-        LAYER_SOURCES.put(outerPart, new LayerSource(sourcePart, armOffset));
-    }
-
-    public static synchronized void removeLayerSource(ModelPart outerPart) {
-        LAYER_SOURCES.remove(outerPart);
-    }
-
-    public static synchronized void clearLayerSources() {
-        LAYER_SOURCES.clear();
-    }
-
-    static synchronized LayerSource getLayerSource(ModelPart modelPart) {
-        return modelPart == null ? null : LAYER_SOURCES.get(modelPart);
-    }
-
-    static synchronized int layerSourceCount() {
-        return LAYER_SOURCES.size();
-    }
-
     static Direction bendDirection(String partName) {
         return switch (normalize(partName)) {
             case "torso", "body", "jacket" -> Direction.DOWN;
@@ -97,8 +70,5 @@ public final class PlayerAnimatorBendCompat {
                     partName
             );
         }
-    }
-
-    record LayerSource(ModelPart modelPart, float armOffset) {
     }
 }

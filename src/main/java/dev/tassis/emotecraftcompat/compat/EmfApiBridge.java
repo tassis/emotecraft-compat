@@ -13,12 +13,6 @@ import java.util.function.Function;
 final class EmfApiBridge {
     private static final String API_CLASS = "traben.entity_model_features.EMFAnimationApi";
     private static final String ENTITY_CLASS = "traben.entity_model_features.utils.EMFEntity";
-    private static final String ANIMATION_CONTEXT_CLASS =
-            "traben.entity_model_features.models.animation.EMFAnimationEntityContext";
-
-    private static boolean contextResolved;
-    private static Method currentEntityMethod;
-
     private final Method registerPauseCondition;
     private final Method registerVanillaModelCondition;
     private final Method lockVanillaModel;
@@ -91,33 +85,6 @@ final class EmfApiBridge {
 
     boolean resumeAnimations(Player player) throws ReflectiveOperationException {
         return invoke(resumeAnimations, player);
-    }
-
-    static Player currentAnimatedPlayer() {
-        resolveAnimationContext();
-        if (currentEntityMethod == null) {
-            return null;
-        }
-
-        try {
-            Object entity = currentEntityMethod.invoke(null);
-            return entity instanceof Player player ? player : null;
-        } catch (ReflectiveOperationException exception) {
-            return null;
-        }
-    }
-
-    private static synchronized void resolveAnimationContext() {
-        if (contextResolved) {
-            return;
-        }
-
-        contextResolved = true;
-        try {
-            currentEntityMethod = Class.forName(ANIMATION_CONTEXT_CLASS).getMethod("getEMFEntity");
-        } catch (ReflectiveOperationException | SecurityException exception) {
-            currentEntityMethod = null;
-        }
     }
 
     private static Method findMethod(Class<?> owner, String name, Class<?>... parameterTypes) {

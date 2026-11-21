@@ -2,12 +2,11 @@ package dev.tassis.emotecraftcompat.state;
 
 import dev.tassis.emotecraftcompat.EmotecraftCompatMod;
 import dev.tassis.emotecraftcompat.compat.EmfCompat;
-import dev.tassis.emotecraftcompat.compat.PlayerAnimatorBendCompat;
 import net.minecraft.client.Minecraft;
 import net.minecraft.client.multiplayer.ClientLevel;
 import net.minecraft.client.player.AbstractClientPlayer;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 
 import java.util.HashSet;
 import java.util.Map;
@@ -64,7 +63,6 @@ public final class EmoteStateManager {
     public static void clear() {
         ACTIVE_EMOTES.clear();
         EmfCompat.warnIfLegacyStatesRemain();
-        PlayerAnimatorBendCompat.clearLayerSources();
     }
 
     private static boolean isPlayerEmoting(Player player) {

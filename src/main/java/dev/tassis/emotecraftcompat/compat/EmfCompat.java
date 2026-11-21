@@ -3,7 +3,7 @@ package dev.tassis.emotecraftcompat.compat;
 import dev.tassis.emotecraftcompat.EmotecraftCompatMod;
 import dev.tassis.emotecraftcompat.state.EmoteStateManager;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.fml.ModList;
+import net.minecraftforge.fml.ModList;
 
 import java.lang.reflect.Method;
 import java.util.Set;
@@ -111,11 +111,6 @@ public final class EmfCompat {
         }
     }
 
-    public static boolean shouldSuppressCurrentAnimatedPlayer() {
-        Player player = getCurrentAnimatedPlayer();
-        return player != null && EmoteStateManager.isEmoteActive(player.getUUID());
-    }
-
     public static boolean shouldUseLegacyPauseFallback() {
         return !pauseHook.isActive();
     }
@@ -130,13 +125,6 @@ public final class EmfCompat {
 
     private static boolean isTrackedEmotingPlayer(Object emfEntity) {
         return emfEntity instanceof Player player && EmoteStateManager.isEmoteActive(player.getUUID());
-    }
-
-    private static Player getCurrentAnimatedPlayer() {
-        if (!isLoaded()) {
-            return null;
-        }
-        return EmfApiBridge.currentAnimatedPlayer();
     }
 
     private static synchronized void resolveApi() {

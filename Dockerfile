@@ -1,3 +1,3 @@
-FROM gradle:9.2.1-jdk21
+FROM gradle:8.8-jdk17
 
 WORKDIR /workspace

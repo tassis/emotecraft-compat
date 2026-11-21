@@ -1,41 +1,33 @@
 # Emotecraft Compat
 
-A compatibility mod for NeoForge 1.21.1, inspired by
+A compatibility mod for Forge 1.20.1, inspired by
 [catman0221/emotecraft-fix-animate-texture](https://github.com/catman0221/emotecraft-fix-animate-texture).
 It keeps Emotecraft animations compatible with Entity Model Features, Player
-Animator, BendyLib, and 3D Skin Layers while leaving unrelated render paths
-untouched. When installed on a server, it also repairs Emotecraft 2.4.12's
-server-emote definition synchronization.
+Animator, and BendyLib while leaving unrelated render paths untouched.
 
 ## Requirements
 
-- Minecraft 1.21.1
-- NeoForge 21.1.1 or newer in the 21.1 line
-- Emotecraft
+- Minecraft 1.20.1
+- Forge 47.4.28 or newer in the 47.x line
+- Emotecraft 2.2.7
 
-Client and server installations are independent. Installing the mod only on a
-client enables the rendering integrations; installing it on a server with
-Emotecraft enables the synchronization repair. EMF, Player Animator, BendyLib,
-and 3D Skin Layers are optional, and each integration activates only when its
-required stack is present.
+The compatibility behavior is client-side. EMF, Player Animator, and BendyLib
+are optional, and each integration activates only when its required stack is
+present.
 
-The server synchronization repair is deliberately limited to Emotecraft
-2.4.12, whose published NeoForge build contains the affected synthetic sender.
-Later Emotecraft versions are left untouched so an upstream fix is not
-overridden.
+Emotecraft 2.2.7's Forge server already sends each server emote through its
+native custom-payload path with a 1 MiB serialization limit. This mod deliberately
+does not replace that path; an automated bytecode contract guards that decision.
 
-## Tested Compatibility
+## Targeted Compatibility
 
-The following versions have been tested successfully in-game on Minecraft
-1.21.1 with NeoForge 21.1.249 and Emotecraft 2.4.12. The mod's declared
-minimum is NeoForge 21.1.1, which is also covered by automated build and unit
-tests:
+- Entity Model Features 3.3.12
+- Player Animator 1.0.2-rc1
+- BendyLib 4.0.0
 
-- Entity Model Features 3.3.5
-- 3D Skin Layers 1.11.2
-
-These are confirmed working versions, not declarations that every other
-version is incompatible. EMF and 3D Skin Layers remain optional dependencies.
+The Player Animator integration also repairs BendyLib mutators on Minecraft's
+vanilla jacket, sleeve, and pants overlay parts so the second skin layer bends
+with the underlying body parts. It does not require 3D Skin Layers.
 
 ## Build with Docker
 
@@ -47,7 +39,7 @@ docker compose run --rm build
 
 The built mod is written to `build/libs/`.
 
-To launch the NeoForge development client from the same container:
+To launch the Forge development client from the same container:
 
 ```sh
 docker compose run --rm build gradle --no-daemon runClient
@@ -68,7 +60,7 @@ welcome.
 
 - Catman0221: original Forge 1.20.1 mod
 - atleugim: upstream Fabric port
-- Tassis: NeoForge 1.21.1 implementation and expanded compatibility work
+- Tassis: Forge 1.20.1 compatibility work
 
 This is an independent implementation inspired by the projects above; no
 upstream source code is included.

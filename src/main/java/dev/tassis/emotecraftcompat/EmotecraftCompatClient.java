@@ -1,21 +1,17 @@
 package dev.tassis.emotecraftcompat;
 
 import dev.tassis.emotecraftcompat.compat.EmfCompat;
-import dev.tassis.emotecraftcompat.compat.PlayerAnimatorBendCompat;
-import dev.tassis.emotecraftcompat.compat.SkinLayersBendCompat;
 import dev.tassis.emotecraftcompat.state.EmoteStateManager;
 import net.minecraft.client.Minecraft;
-import net.minecraft.server.packs.resources.ResourceManagerReloadListener;
 import net.minecraft.world.entity.player.Player;
-import net.neoforged.api.distmarker.Dist;
-import net.neoforged.bus.api.SubscribeEvent;
-import net.neoforged.fml.ModList;
-import net.neoforged.fml.common.EventBusSubscriber;
-import net.neoforged.fml.event.lifecycle.FMLClientSetupEvent;
-import net.neoforged.neoforge.client.event.ClientPlayerNetworkEvent;
-import net.neoforged.neoforge.client.event.ClientTickEvent;
-import net.neoforged.neoforge.client.event.RegisterClientReloadListenersEvent;
-import net.neoforged.neoforge.event.entity.EntityLeaveLevelEvent;
+import net.minecraftforge.api.distmarker.Dist;
+import net.minecraftforge.client.event.ClientPlayerNetworkEvent;
+import net.minecraftforge.event.TickEvent;
+import net.minecraftforge.event.entity.EntityLeaveLevelEvent;
+import net.minecraftforge.eventbus.api.SubscribeEvent;
+import net.minecraftforge.fml.ModList;
+import net.minecraftforge.fml.common.Mod.EventBusSubscriber;
+import net.minecraftforge.fml.event.lifecycle.FMLClientSetupEvent;
 
 @EventBusSubscriber(
         modid = EmotecraftCompatMod.MOD_ID,
@@ -30,20 +26,7 @@ public final class EmotecraftCompatClient {
     public static void onClientSetup(FMLClientSetupEvent event) {
         EmotecraftCompatMod.LOGGER.info("Detected Emotecraft loaded: {}", ModList.get().isLoaded("emotecraft"));
         EmotecraftCompatMod.LOGGER.info("Detected EMF loaded: {}", ModList.get().isLoaded("entity_model_features"));
-        EmotecraftCompatMod.LOGGER.info("Detected 3D Skin Layers loaded: {}", ModList.get().isLoaded("skinlayers3d"));
-        event.enqueueWork(() -> {
-            EmfCompat.registerHooks();
-            if (EmotecraftCompatMod.canRegisterSkinLayersBendCompat(ModList.get()::isLoaded)) {
-                SkinLayersBendCompat.register();
-            }
-        });
-    }
-
-    @SubscribeEvent
-    public static void onRegisterClientReloadListeners(RegisterClientReloadListenersEvent event) {
-        event.registerReloadListener(
-                (ResourceManagerReloadListener) resourceManager -> PlayerAnimatorBendCompat.clearLayerSources()
-        );
+        event.enqueueWork(EmfCompat::registerHooks);
     }
 
     @EventBusSubscriber(modid = EmotecraftCompatMod.MOD_ID, value = Dist.CLIENT)
@@ -52,8 +35,10 @@ public final class EmotecraftCompatClient {
         }
 
         @SubscribeEvent
-        public static void afterClientTick(ClientTickEvent.Post event) {
-            EmoteStateManager.refresh(Minecraft.getInstance());
+        public static void afterClientTick(TickEvent.ClientTickEvent event) {
+            if (event.phase == TickEvent.Phase.END) {
+                EmoteStateManager.refresh(Minecraft.getInstance());
+            }
         }
 
         @SubscribeEvent

@@ -1,7 +1,19 @@
+buildscript {
+    repositories {
+        mavenCentral()
+        maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
+    }
+    dependencies {
+        classpath 'org.spongepowered:mixingradle:0.7-SNAPSHOT'
+    }
+}
+
 plugins {
     id 'java'
-    id 'net.neoforged.moddev' version '2.0.141'
+    id 'net.minecraftforge.gradle' version '[6.0.16,6.2)'
 }
+
+apply plugin: 'org.spongepowered.mixin'
 
 version = mod_version
 group = mod_group_id
@@ -10,87 +22,77 @@ base {
     archivesName = "${mod_id}-${mod_loader}-${minecraft_version}"
 }
 
-java.toolchain.languageVersion = JavaLanguageVersion.of(21)
+java.toolchain.languageVersion = JavaLanguageVersion.of(17)
+
+minecraft {
+    mappings channel: mapping_channel, version: mapping_version
+    copyIdeResources = true
+
+    runs {
+        configureEach {
+            workingDirectory project.file('run-client')
+            property 'forge.logging.console.level', 'info'
+            mods {
+                "${mod_id}" {
+                    source sourceSets.main
+                }
+            }
+        }
+        client {}
+    }
+}
 
 repositories {
     mavenCentral()
+    maven { url = 'https://repo.spongepowered.org/repository/maven-public/' }
     maven { url = 'https://maven.kosmx.dev/' }
-    exclusiveContent {
-        forRepository {
-            maven { url = 'https://api.modrinth.com/maven' }
-        }
-        filter { includeGroup 'maven.modrinth' }
-    }
-}
-
-neoForge {
-    version = neo_version
-
-    mods {
-        "${mod_id}" {
-            sourceSet sourceSets.main
-        }
-    }
-
-    unitTest {
-        enable()
-        testedMod = mods."${mod_id}"
-    }
-
-    runs {
-        client {
-            client()
-            gameDirectory = project.file('run-client')
-        }
-    }
+    maven { url = 'https://api.modrinth.com/maven' }
 }
 
 dependencies {
-    // Player Animator bundles BendyLib at runtime; only its API is needed to
-    // compile the optional repair mixins in this compatibility mod.
-    compileOnly "io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}"
-    compileOnly "dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}"
-    compileOnly "maven.modrinth:entity-model-features:${emf_version}"
-    compileOnly "maven.modrinth:entitytexturefeatures:${etf_version}"
-    compileOnly "maven.modrinth:emotecraft:${emotecraft_version}"
-    compileOnly "maven.modrinth:3dskinlayers:${skinlayers_version}"
+    minecraft "net.minecraftforge:forge:${minecraft_version}-${forge_version}"
+    annotationProcessor 'org.spongepowered:mixin:0.8.5:processor'
 
-    // Keep the complete compatibility stack available to the development client
-    // without bundling any of these optional mods in the published artifact.
-    runtimeOnly "io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}"
-    runtimeOnly "dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}"
-    runtimeOnly "maven.modrinth:entity-model-features:${emf_version}"
-    runtimeOnly "maven.modrinth:entitytexturefeatures:${etf_version}"
-    runtimeOnly "maven.modrinth:emotecraft:${emotecraft_version}"
-    runtimeOnly "maven.modrinth:3dskinlayers:${skinlayers_version}"
+    compileOnly fg.deobf("io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}")
+    compileOnly fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}")
+    compileOnly fg.deobf("maven.modrinth:entity-model-features:${emf_version}")
+    compileOnly fg.deobf("maven.modrinth:entitytexturefeatures:${etf_version}")
+    compileOnly fg.deobf("maven.modrinth:emotecraft:${emotecraft_version}")
+
+    runtimeOnly fg.deobf("io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}")
+    runtimeOnly fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}")
+    runtimeOnly fg.deobf("maven.modrinth:entity-model-features:${emf_version}")
+    runtimeOnly fg.deobf("maven.modrinth:entitytexturefeatures:${etf_version}")
+    runtimeOnly fg.deobf("maven.modrinth:emotecraft:${emotecraft_version}")
 
     testImplementation platform('org.junit:junit-bom:5.11.4')
     testImplementation 'org.junit.jupiter:junit-jupiter'
-    testImplementation "io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}"
-    testImplementation "dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}"
-    testImplementation "maven.modrinth:entity-model-features:${emf_version}"
-    testImplementation "maven.modrinth:entitytexturefeatures:${etf_version}"
-    testImplementation "maven.modrinth:emotecraft:${emotecraft_version}"
-    testImplementation "maven.modrinth:3dskinlayers:${skinlayers_version}"
+    testImplementation fg.deobf("io.github.kosmx.bendy-lib:bendy-lib-forge:${bendylib_version}")
+    testImplementation fg.deobf("dev.kosmx.player-anim:player-animation-lib-forge:${player_animator_version}")
+    testImplementation fg.deobf("maven.modrinth:entity-model-features:${emf_version}")
+    testImplementation fg.deobf("maven.modrinth:entitytexturefeatures:${etf_version}")
+    testImplementation fg.deobf("maven.modrinth:emotecraft:${emotecraft_version}")
     testRuntimeOnly 'org.junit.platform:junit-platform-launcher'
+}
+
+mixin {
+    add sourceSets.main, "${mod_id}.refmap.json"
+    config "${mod_id}.mixins.json"
 }
 
 tasks.named('test', Test) {
     useJUnitPlatform()
 }
 
-tasks.named('jar', Jar) {
-    from('LICENSE')
-}
+tasks.named('processResources', ProcessResources).configure {
+    dependsOn tasks.named('compileJava')
 
-tasks.withType(JavaCompile).configureEach {
-    options.encoding = 'UTF-8'
-}
-
-var generateModMetadata = tasks.register('generateModMetadata', ProcessResources) {
     var replaceProperties = [
             minecraft_version: minecraft_version,
-            neo_version: neo_version,
+            minecraft_version_range: minecraft_version_range,
+            forge_version: forge_version,
+            forge_version_range: forge_version_range,
+            loader_version_range: loader_version_range,
             mod_id: mod_id,
             mod_name: mod_name,
             mod_version: mod_version,
@@ -98,10 +100,28 @@ var generateModMetadata = tasks.register('generateModMetadata', ProcessResources
             mod_description: mod_description
     ]
     inputs.properties replaceProperties
-    expand replaceProperties
-    from 'src/main/templates'
-    into 'build/generated/sources/modMetadata'
+    filesMatching('META-INF/mods.toml') {
+        expand replaceProperties
+    }
+    from(layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json')) {
+        rename { "${mod_id}.refmap.json" }
+    }
 }
 
-sourceSets.main.resources.srcDir generateModMetadata
-neoForge.ideSyncTask generateModMetadata
+tasks.named('jar', Jar).configure {
+    duplicatesStrategy = DuplicatesStrategy.EXCLUDE
+    from('LICENSE')
+    manifest.attributes('MixinConfigs': "${mod_id}.mixins.json")
+    finalizedBy 'reobfJar'
+}
+
+tasks.withType(JavaCompile).configureEach {
+    options.encoding = 'UTF-8'
+}
+
+tasks.named('compileJava', JavaCompile).configure {
+    outputs.file(layout.buildDirectory.file('tmp/compileJava/compileJava-refmap.json'))
+            .withPropertyName('mixinRefmap')
+    outputs.file(layout.buildDirectory.file('tmp/compileJava/compileJava-mappings.tsrg'))
+            .withPropertyName('mixinMappings')
+}
