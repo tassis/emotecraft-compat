@@ -8,7 +8,7 @@ Animator, and BendyLib while leaving unrelated render paths untouched.
 ## Requirements
 
 - Minecraft 1.20.1
-- Forge 47.4.28 or newer in the 47.x line
+- Forge 47.2.0 or newer in the 47.x line
 - Emotecraft 2.2.7
 
 The compatibility behavior is client-side. EMF, Player Animator, and BendyLib

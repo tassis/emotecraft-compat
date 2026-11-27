@@ -22,7 +22,7 @@ class MetadataContractTest {
         assertTrue(metadata.contains("modId=\"playeranimator\""));
         assertTrue(metadata.contains("modId=\"bendylib\""));
         assertTrue(dependencyBlock(metadata, "forge").contains("side=\"BOTH\""));
-        assertTrue(dependencyBlock(metadata, "forge").contains("versionRange=\"[47.4.28,48)\""));
+        assertTrue(dependencyBlock(metadata, "forge").contains("versionRange=\"[47.2.0,48)\""));
         assertTrue(dependencyBlock(metadata, "minecraft").contains("side=\"BOTH\""));
         assertTrue(dependencyBlock(metadata, "minecraft").contains("versionRange=\"[1.20.1]\""));
         assertTrue(metadata.contains("""
