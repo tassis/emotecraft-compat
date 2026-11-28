@@ -20,13 +20,6 @@ public abstract class EMFAnimationEntityContextMixin {
         pauseIfPlayerIsEmoting(callback);
     }
 
-    @Inject(method = "isEntityForcedToVanillaModel", at = @At("HEAD"), cancellable = true, require = 0, remap = false)
-    private static void emotecraftCompat$forceVanillaModel(CallbackInfoReturnable<Boolean> callback) {
-        if (EmfCompat.shouldUseLegacyVanillaFallback() && EmfCompat.shouldSuppressCurrentAnimatedPlayer()) {
-            callback.setReturnValue(true);
-        }
-    }
-
     private static void pauseIfPlayerIsEmoting(CallbackInfoReturnable<Boolean> callback) {
         if (EmfCompat.shouldUseLegacyPauseFallback() && EmfCompat.shouldSuppressCurrentAnimatedPlayer()) {
             callback.setReturnValue(true);

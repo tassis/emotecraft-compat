@@ -17,30 +17,16 @@ import static org.junit.jupiter.api.Assertions.assertTrue;
 
 class EmfCompatTest {
     @Test
-    void tracksPauseAndVanillaRegistrationIndependently() throws Exception {
+    void tracksPauseRegistration() throws Exception {
         for (boolean pauseResult : new boolean[] {false, true}) {
-            for (boolean vanillaResult : new boolean[] {false, true}) {
-                RegistrationFixture.pauseResult = pauseResult;
-                RegistrationFixture.vanillaResult = vanillaResult;
-                RegistrationFixture.pauseCalls = 0;
-                RegistrationFixture.vanillaCalls = 0;
-                EmfCompat.HookCapability pause = capability("pauseCondition", "registerPause");
-                EmfCompat.HookCapability vanilla = capability("vanillaModelCondition", "registerVanilla");
-
-                pause.register(ignored -> false);
-                vanilla.register(ignored -> false);
-
-                assertEquals(
-                        pauseResult ? EmfCompat.CapabilityState.ACTIVE : EmfCompat.CapabilityState.FAILED,
-                        pause.state()
-                );
-                assertEquals(
-                        vanillaResult ? EmfCompat.CapabilityState.ACTIVE : EmfCompat.CapabilityState.FAILED,
-                        vanilla.state()
-                );
-                assertEquals(1, RegistrationFixture.pauseCalls);
-                assertEquals(1, RegistrationFixture.vanillaCalls);
-            }
+            RegistrationFixture.pauseResult = pauseResult;
+            RegistrationFixture.pauseCalls = 0;
+            EmfCompat.HookCapability pause = capability("pauseCondition", "registerPause");
+            pause.register(ignored -> false);
+            assertEquals(pauseResult ? EmfCompat.CapabilityState.ACTIVE : EmfCompat.CapabilityState.FAILED,
+                    pause.state());
+            assertEquals(pauseResult, pause.isActive());
+            assertEquals(1, RegistrationFixture.pauseCalls);
         }
     }
 
@@ -64,18 +50,19 @@ class EmfCompatTest {
     }
 
     @Test
-    void isolatesRegistrationExceptionsToTheFailingCapability() throws Exception {
-        RegistrationFixture.vanillaCalls = 0;
-        RegistrationFixture.vanillaResult = true;
+    void failedRegistrationAllowsFallback() throws Exception {
         EmfCompat.HookCapability pause = capability("pauseCondition", "throwDuringRegistration");
-        EmfCompat.HookCapability vanilla = capability("vanillaModelCondition", "registerVanilla");
-
         pause.register(ignored -> false);
-        vanilla.register(ignored -> false);
-
         assertEquals(EmfCompat.CapabilityState.FAILED, pause.state());
-        assertEquals(EmfCompat.CapabilityState.ACTIVE, vanilla.state());
-        assertEquals(1, RegistrationFixture.vanillaCalls);
+        assertFalse(pause.isActive());
+    }
+
+    @Test
+    void missingPauseApiAllowsFallback() {
+        EmfCompat.HookCapability pause = EmfCompat.HookCapability.unavailable("pauseCondition");
+        assertEquals(EmfCompat.CapabilityState.UNAVAILABLE, pause.register(ignored -> false));
+        assertFalse(pause.isAvailable());
+        assertFalse(pause.isActive());
     }
 
     @Test
@@ -179,9 +166,7 @@ class EmfCompatTest {
 
     public static final class RegistrationFixture {
         private static boolean pauseResult;
-        private static boolean vanillaResult;
         private static int pauseCalls;
-        private static int vanillaCalls;
 
         private RegistrationFixture() {
         }
@@ -189,11 +174,6 @@ class EmfCompatTest {
         public static boolean registerPause(Function<Object, Boolean> condition) {
             pauseCalls++;
             return pauseResult;
-        }
-
-        public static boolean registerVanilla(Function<Object, Boolean> condition) {
-            vanillaCalls++;
-            return vanillaResult;
         }
 
         public static boolean throwDuringRegistration(Function<Object, Boolean> condition) {

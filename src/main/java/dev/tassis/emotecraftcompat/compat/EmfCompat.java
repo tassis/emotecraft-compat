@@ -14,14 +14,12 @@ import java.util.function.Function;
 public final class EmfCompat {
     private static final String EMF_MOD_ID = "entity_model_features";
 
-    // These sets record successful legacy API calls. Entries are removed only after the matching
+    // This set records successful legacy API calls. Entries are removed only after the matching
     // release succeeds, so a transient EMF failure can be retried instead of silently leaking state.
     private static final Set<UUID> LEGACY_PAUSED_PLAYERS = ConcurrentHashMap.newKeySet();
-    private static final Set<UUID> LEGACY_VANILLA_PLAYERS = ConcurrentHashMap.newKeySet();
     private static volatile boolean apiResolved;
     private static volatile EmfApiBridge api = EmfApiBridge.unavailable();
     private static volatile HookCapability pauseHook = HookCapability.unavailable("pauseCondition");
-    private static volatile HookCapability vanillaModelHook = HookCapability.unavailable("vanillaModelCondition");
 
     private EmfCompat() {
     }
@@ -32,7 +30,7 @@ public final class EmfCompat {
         }
 
         resolveApi();
-        if (!pauseHook.isAvailable() && !vanillaModelHook.isAvailable()) {
+        if (!pauseHook.isAvailable()) {
             EmotecraftCompatMod.LOGGER.info("Modern EMF condition API unavailable; legacy compatibility fallback will be used");
             return;
         }
@@ -40,11 +38,8 @@ public final class EmfCompat {
         // EMF calls these from rendering; only consume tick-captured state here.
         Function<Object, Boolean> condition = EmfCompat::isTrackedEmotingPlayer;
         pauseHook.register(condition);
-        vanillaModelHook.register(condition);
         EmotecraftCompatMod.LOGGER.info(
-                "Registered EMF compatibility hooks: pauseCondition={}, vanillaModelCondition={}",
-                pauseHook.state(),
-                vanillaModelHook.state()
+                "Registered EMF compatibility hook: pauseCondition={}", pauseHook.state()
         );
     }
 
@@ -63,15 +58,6 @@ public final class EmfCompat {
                     () -> emoting ? api.pauseAnimations(player) : api.resumeAnimations(player)
             );
         }
-        if (shouldUseLegacyVanillaFallback()) {
-            syncLegacyCapability(
-                    "vanilla model",
-                    LEGACY_VANILLA_PLAYERS,
-                    playerId,
-                    emoting,
-                    () -> emoting ? api.lockVanillaModel(player) : api.unlockVanillaModel(player)
-            );
-        }
     }
 
     public static void releasePlayerState(Player player) {
@@ -83,17 +69,10 @@ public final class EmfCompat {
                 false,
                 () -> api.resumeAnimations(player)
         );
-        syncLegacyCapability(
-                "vanilla model",
-                LEGACY_VANILLA_PLAYERS,
-                playerId,
-                false,
-                () -> api.unlockVanillaModel(player)
-        );
     }
 
     public static void warnIfLegacyStateRemains(UUID playerId) {
-        if (LEGACY_PAUSED_PLAYERS.contains(playerId) || LEGACY_VANILLA_PLAYERS.contains(playerId)) {
+        if (LEGACY_PAUSED_PLAYERS.contains(playerId)) {
             EmotecraftCompatMod.LOGGER.warn(
                     "Retaining failed EMF release state for player {} so it can be retried",
                     playerId
@@ -102,11 +81,9 @@ public final class EmfCompat {
     }
 
     public static void warnIfLegacyStatesRemain() {
-        if (!LEGACY_PAUSED_PLAYERS.isEmpty() || !LEGACY_VANILLA_PLAYERS.isEmpty()) {
+        if (!LEGACY_PAUSED_PLAYERS.isEmpty()) {
             EmotecraftCompatMod.LOGGER.warn(
-                    "EMF legacy suppression remains applied for {} paused and {} vanilla-model players",
-                    LEGACY_PAUSED_PLAYERS.size(),
-                    LEGACY_VANILLA_PLAYERS.size()
+                    "EMF legacy suppression remains applied for {} paused players", LEGACY_PAUSED_PLAYERS.size()
             );
         }
     }
@@ -118,10 +95,6 @@ public final class EmfCompat {
 
     public static boolean shouldUseLegacyPauseFallback() {
         return !pauseHook.isActive();
-    }
-
-    public static boolean shouldUseLegacyVanillaFallback() {
-        return !vanillaModelHook.isActive();
     }
 
     private static boolean isLoaded() {
@@ -149,10 +122,6 @@ public final class EmfCompat {
             pauseHook = new HookCapability(
                     "pauseCondition",
                     api.pauseConditionRegistration()
-            );
-            vanillaModelHook = new HookCapability(
-                    "vanillaModelCondition",
-                    api.vanillaModelConditionRegistration()
             );
         } catch (ReflectiveOperationException exception) {
             EmotecraftCompatMod.LOGGER.warn("Failed to load the EMF animation API; mixin fallback will be used", exception);

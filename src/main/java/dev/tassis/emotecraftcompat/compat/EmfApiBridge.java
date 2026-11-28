@@ -20,45 +20,30 @@ final class EmfApiBridge {
     private static Method currentEntityMethod;
 
     private final Method registerPauseCondition;
-    private final Method registerVanillaModelCondition;
-    private final Method lockVanillaModel;
-    private final Method unlockVanillaModel;
     private final Method pauseAnimations;
     private final Method resumeAnimations;
 
     private EmfApiBridge(
             Method registerPauseCondition,
-            Method registerVanillaModelCondition,
-            Method lockVanillaModel,
-            Method unlockVanillaModel,
             Method pauseAnimations,
             Method resumeAnimations
     ) {
         this.registerPauseCondition = registerPauseCondition;
-        this.registerVanillaModelCondition = registerVanillaModelCondition;
-        this.lockVanillaModel = lockVanillaModel;
-        this.unlockVanillaModel = unlockVanillaModel;
         this.pauseAnimations = pauseAnimations;
         this.resumeAnimations = resumeAnimations;
     }
 
     static EmfApiBridge unavailable() {
-        return new EmfApiBridge(null, null, null, null, null, null);
+        return new EmfApiBridge(null, null, null);
     }
 
     static EmfApiBridge resolve(ClassLoader classLoader) throws ReflectiveOperationException {
         Class<?> apiClass = Class.forName(API_CLASS, false, classLoader);
         Method pauseCondition = findMethod(apiClass, "registerPauseCondition", Function.class);
-        Method vanillaModelCondition = findMethod(apiClass, "registerVanillaModelCondition", Function.class);
-
-        Method lock = null;
-        Method unlock = null;
         Method pause = null;
         Method resume = null;
         try {
             Class<?> entityClass = Class.forName(ENTITY_CLASS, false, classLoader);
-            lock = findMethod(apiClass, "lockEntityToVanillaModel", entityClass);
-            unlock = findMethod(apiClass, "unlockEntityToVanillaModel", entityClass);
             pause = findMethod(apiClass, "pauseAllCustomAnimationsForEntity", entityClass);
             resume = findMethod(apiClass, "resumeAllCustomAnimationsForEntity", entityClass);
         } catch (ReflectiveOperationException exception) {
@@ -66,23 +51,11 @@ final class EmfApiBridge {
             EmotecraftCompatMod.LOGGER.warn("Failed to resolve the legacy EMF entity API", exception);
         }
 
-        return new EmfApiBridge(pauseCondition, vanillaModelCondition, lock, unlock, pause, resume);
+        return new EmfApiBridge(pauseCondition, pause, resume);
     }
 
     Method pauseConditionRegistration() {
         return registerPauseCondition;
-    }
-
-    Method vanillaModelConditionRegistration() {
-        return registerVanillaModelCondition;
-    }
-
-    boolean lockVanillaModel(Player player) throws ReflectiveOperationException {
-        return invoke(lockVanillaModel, player);
-    }
-
-    boolean unlockVanillaModel(Player player) throws ReflectiveOperationException {
-        return invoke(unlockVanillaModel, player);
     }
 
     boolean pauseAnimations(Player player) throws ReflectiveOperationException {

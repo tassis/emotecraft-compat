@@ -36,15 +36,13 @@ class CompatibilitySignatureTest {
     }
 
     @Test
-    void emfExposesModernConditionsAndLegacyPauseHook() throws Exception {
+    void emfExposesModernConditionAndLegacyPauseHook() throws Exception {
         Class<?> api = load("traben.entity_model_features.EMFAnimationApi");
         Class<?> context = load("traben.entity_model_features.models.animation.EMFAnimationEntityContext");
 
         assertEquals(boolean.class, api.getMethod("registerPauseCondition", Function.class).getReturnType());
-        assertEquals(boolean.class, api.getMethod("registerVanillaModelCondition", Function.class).getReturnType());
         assertEquals(boolean.class, context.getMethod("isEntityAnimPaused").getReturnType());
         assertThrows(NoSuchMethodException.class, () -> context.getMethod("isEntityAnimPausedWrapped"));
-        assertThrows(NoSuchMethodException.class, () -> context.getMethod("isEntityForcedToVanillaModel"));
     }
 
     @Test
