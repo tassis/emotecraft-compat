@@ -53,6 +53,14 @@ To launch the NeoForge development client from the same container:
 docker compose run --rm build gradle --no-daemon runClient
 ```
 
+## Release
+
+Releases are created manually from the GitHub Actions **Build** workflow. Run
+the workflow with **Run workflow**, enter the desired version (for example,
+`0.2.2`), and GitHub Actions will test and build that version before creating
+the corresponding GitHub Release and `v<version>` tag. A tag does not need to
+be created or pushed beforehand.
+
 ## Development Notes
 
 This project was developed with the assistance of AI tools, including code

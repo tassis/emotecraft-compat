@@ -4,10 +4,13 @@ on:
   push:
     branches:
       - '**'
-    tags:
-      - 'v*'
   pull_request:
   workflow_dispatch:
+    inputs:
+      version:
+        description: Release version (for example, 0.2.2 or 0.3.0-beta.1)
+        required: true
+        type: string
 
 permissions:
   contents: read
@@ -45,8 +48,15 @@ jobs:
       - name: Read and validate version
         id: version
         shell: bash
+        env:
+          INPUT_VERSION: ${{ inputs.version }}
         run: |
-          version="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          configured_version="$(sed -n 's/^mod_version=//p' gradle.properties)"
+          if [[ "$GITHUB_EVENT_NAME" == "workflow_dispatch" ]]; then
+            version="$INPUT_VERSION"
+          else
+            version="$configured_version"
+          fi
           minecraft_version="$(sed -n 's/^minecraft_version=//p' gradle.properties)"
           mod_loader="$(sed -n 's/^mod_loader=//p' gradle.properties)"
           mod_id="$(sed -n 's/^mod_id=//p' gradle.properties)"
@@ -66,15 +76,13 @@ jobs:
             echo "mod_id is invalid: $mod_id" >&2
             exit 1
           fi
-          if [[ "$GITHUB_REF_TYPE" == "tag" && "$GITHUB_REF_NAME" != "v$version" ]]; then
-            echo "Tag $GITHUB_REF_NAME does not match mod_version=$version; expected v$version" >&2
-            exit 1
-          fi
           echo "value=$version" >> "$GITHUB_OUTPUT"
           echo "artifact_name=${mod_id}-${mod_loader}-${minecraft_version}-${version}" >> "$GITHUB_OUTPUT"
 
       - name: Test and build
-        run: gradle --no-daemon clean test build
+        env:
+          MOD_VERSION: ${{ steps.version.outputs.value }}
+        run: gradle --no-daemon clean test build -Pmod_version="$MOD_VERSION"
 
       - name: Upload test report on failure
         if: failure()
@@ -92,7 +100,7 @@ jobs:
           if-no-files-found: error
 
   release:
-    if: github.event_name == 'push' && startsWith(github.ref, 'refs/tags/v')
+    if: github.event_name == 'workflow_dispatch'
     needs: build
     runs-on: ubuntu-24.04
     timeout-minutes: 10
@@ -117,10 +125,10 @@ jobs:
           jar="dist/${ARTIFACT_NAME}.jar"
           test -f "$jar"
           release_args=(
-            "$GITHUB_REF_NAME"
+            "v${VERSION}"
             "$jar"
             --repo "$GITHUB_REPOSITORY"
-            --verify-tag
+            --target "$GITHUB_SHA"
             --title "Emotecraft Compat ${VERSION}"
             --generate-notes
           )
